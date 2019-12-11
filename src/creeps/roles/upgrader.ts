@@ -9,7 +9,7 @@ export default class upgrader extends Default {
             if(resourceTarget && creep.pickup(resourceTarget) == ERR_NOT_IN_RANGE){
                 creep.moveTo(resourceTarget);
             }
-            if(creep.store.getFreeCapacity() === 0){
+            if(creep.store.getFreeCapacity() === 0 || !resourceTarget){
                 delete creep.memory.target;
             }
         } else if(creep.room.controller){
