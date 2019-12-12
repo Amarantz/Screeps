@@ -3,6 +3,7 @@ import Havester from "creeps/roles/havester";
 import Upgrader from "creeps/roles/upgrader";
 import Worker from "creeps/roles/worker";
 import Filler from "creeps/roles/filler";
+import Transporter from "creeps/roles/transport";
 
 const maxHavesters = 2;
 const maxUpgraders = 4;
@@ -16,7 +17,7 @@ export const loop = () => {
 
     const harvesters = _.filter(Game.creeps, (creep) => creep.memory.role === 'havester');
     const upgrader  = _.filter(Game.creeps, (creep) => creep.memory.role === 'upgrader');
-    const transport = _.filter(Game.creeps, (creep) => creep.memory.role === 'transporter');
+    const transporters = _.filter(Game.creeps, (creep) => creep.memory.role === 'transporter');
     const filler = _.filter(Game.creeps, (creep) => creep.memory.role === 'filler');
     const builders = _.filter(Game.creeps, (creep) => creep.memory.role === 'builder');
 
@@ -28,8 +29,8 @@ export const loop = () => {
         if(creep.memory.role === 'upgrader'){
             Upgrader.run(creep);
         }
-        if(creep.memory.role === 'transport'){
-
+        if(creep.memory.role === 'transporter'){
+            Transporter.run(creep);
         }
         if(creep.memory.role === 'builder') {
             Worker.run(creep);
@@ -44,7 +45,7 @@ export const loop = () => {
         let name = 'Havester' + Game.time;
         const body = [WORK,WORK,MOVE];
         const bodyCost = _.sum(body.map((part)=> BODYPART_COST[part]));
-        if(Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
+        if(spawns[0] && spawns[0].name && Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
             Game.spawns[spawns[0].name].spawnCreep([WORK,WORK,MOVE], name, {memory: {role: 'havester'}});
         }
     }
@@ -53,28 +54,33 @@ export const loop = () => {
         let name = 'upgrader' + Game.time;
         const body = [WORK,CARRY,CARRY,MOVE,MOVE];
         const bodyCost = _.sum(body.map((part)=> BODYPART_COST[part]));
-        if(Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
+        if(spawns[0] && spawns[0].name && Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
             Game.spawns[spawns[0].name].spawnCreep(body, name, {memory: {role: 'upgrader'}});
         }
     }
-    if(harvesters.length && (!transport || transport.length < maxTransporters)){
-
-    }
-    if(harvesters.length && (!filler || filler.length < maxFillers)) {
+    if(harvesters.length && (!filler || filler.length < maxFillers)){
         const name = 'Filler' + Game.time;
         const body = [CARRY,CARRY,MOVE,MOVE];
         const bodyCost = _.sum(body.map((part) => BODYPART_COST[part]));
-        if(Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
+        if(spawns[0] && spawns[0].name && Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
             Game.spawns[spawns[0].name].spawnCreep(body, name, {memory: {role: 'filler'}});
         }
     }
-    
-    const constructionsites = Game.spawns[spawns[0].name].room.find(FIND_CONSTRUCTION_SITES);
+    if(harvesters.length && (!transporters || transporters.length < maxTransporters)) {
+        const name = 'Transporter' + Game.time;
+        const body = [CARRY,CARRY,MOVE,MOVE];
+        const bodyCost = _.sum(body.map((part) => BODYPART_COST[part]));
+        if(spawns[0] && spawns[0].name && Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
+            Game.spawns[spawns[0].name].spawnCreep(body, name, {memory: {role: 'transporter'}});
+        }
+    }
+
+    const constructionsites = spawns[0] && spawns[0].name && Game.spawns[spawns[0].name].room.find(FIND_CONSTRUCTION_SITES) || [];
     if(harvesters.length && ((!builders || builders.length < maxBuilders) && constructionsites.length > 0)) {
         const name = 'builder' + Game.time;
         const body = [WORK,CARRY,CARRY,MOVE,MOVE];
         const bodyCost = _.sum(body.map((part)=> BODYPART_COST[part]));
-        if(Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
+        if(spawns[0] && spawns[0].name && Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
             Game.spawns[spawns[0].name].spawnCreep(body, name, {memory: {role: 'builder'}});
         }
     }
