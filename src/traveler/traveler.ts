@@ -1,3 +1,4 @@
+import Unit from 'unit/unit';
 /**
  * To start using Traveler, require it in main.js:
  * Example: var Traveler = require('Traveler.js');
@@ -18,7 +19,7 @@ export class Traveler {
      * @returns {number}
      */
 
-    public static travelTo(creep: Creep, destination: HasPos|RoomPosition, options: TravelToOptions = {}): number {
+    public static travelTo(creep: Creep| Unit, destination: HasPos|RoomPosition, options: TravelToOptions = {}): number {
 
         // uncomment if you would like to register hostile rooms entered
         // this.updateRoomStatus(creep.room);

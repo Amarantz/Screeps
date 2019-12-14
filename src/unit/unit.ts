@@ -1,6 +1,35 @@
 import Cobal from "Cobal";
 import {log} from '../console/log'
+import { Traveler } from "traveler/traveler";
 
+const actionPiplines: string[][] = [
+    ['harvest', 'attack' , 'build', 'repair', 'dismantle', 'attackController', 'rangeHeal', 'heal'],
+    ['rangedAttack', 'rangedMassAttack', 'build', 'repair', 'rangeHeal'],
+]
+
+export const toCreep = (creep: Unit | Creep): Creep => (isUnit(creep) ? creep.creep : creep));
+
+export const nomrlizeUnit = (creep: Unit | Creep): Unit | Creep => (Cobal.unit[creep.name] || creep)
+
+interface ParkingOptions {
+    range: number;
+    exportRange: boolean;
+    offroad: boolean;
+}
+
+interface FleeOptions {
+    dropEnerge?: boolean;
+    invalidateTask?: boolean;
+}
+
+const RANGES = {
+    BUILD: 3,
+    REPAIR: 3,
+    TRANSFER: 1,
+    WITHDRAW: 1,
+    HARVEST: 1,
+    DROP: 0,
+}
 export default class Unit {
     creep: Creep;
     body: BodyPartDefinition[];
@@ -91,5 +120,38 @@ export default class Unit {
         if(this.spawning) {
             const spawner = this.pos.lookForStructure(STRUCTURE_SPAWN) as StructureSpawn;
         }
+    }
+
+    get print(): string {
+        return `<a href="#!/room/${Game.shard.name}/${this.pos.roomName}">['${this.name}']</a>`;
+    }
+
+    attackController(controller: StructureController){
+        const result = this.creep.attackController(controller);
+        if(!this.actionLog.attackController) {
+            this.actionLog.attackController = (result == OK);
+        }
+    }
+
+    build(target: ConstructionSite){
+        const result = this.creep.build(target)
+            if(!this.actionLog.build) this.actionLog.build = (result == OK)
+    }
+
+    goBuild(target: ConstructionSite){
+        if(this.pos.inRangeToPos(target.pos, RANGES.BUILD)){
+            return this.build(target);
+        } else {
+            this.goTo(target);
+        }
+    }
+
+    //Movement and location
+    goTo(destination: RoomPosition | HasPos, options: MoveOptions = {}){
+        return Traveler.travelTo(this, destination, options);
+    }
+
+    goToRoom(roomane: string, options: MoveOptions = {}){
+        return Traveler.
     }
 }
