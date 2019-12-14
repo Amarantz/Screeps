@@ -1,9 +1,14 @@
-import Mem from "memory/memory";
+import "./prototypes/Creep";
+import "./prototypes/RoomPosition";
 import Havester from "creeps/roles/havester";
 import Upgrader from "creeps/roles/upgrader";
 import Worker from "creeps/roles/worker";
 import Filler from "creeps/roles/filler";
 import Transporter from "creeps/roles/transport";
+
+import Mem from "memory/memory";
+import Unit from "unit/unit";
+import { Traveler } from "traveler/traveler";
 
 const maxHavesters = 2;
 const maxUpgraders = 4;
