@@ -2,32 +2,37 @@
 declare var global: any;
 declare namespace NodeJS {
   interface Global {
-    log: any;
+	log: any;
+	Cobal: ICobal;
   }
 }
 
-interface ICobal {
-	unit: {[creepName:string]: any};
+interface ICache {
+	creepsByBase: {[baseName:string]: Creep[]},
+	targets: {[ref:string]: string[]};
+	outpostFlags: Flag[];
+	build():void;
+	refresh():void;
 }
 
-interface StatsMemory {
-	cpu: {
-		getUsed: number;
-		limit: number;
-		bucket: number;
-		usage: {
-			[colonyName: string]: {
-				init: number;
-				run: number;
-				visuals: number;
-			}
-		}
-	};
-	gcl: {
-		progress: number;
-		progressTotal: number;
-		level: number;
-  };
+interface ICobal {
+	cache: ICache;
+	shouldRebuild: boolean;
+	expiration: number;
+	unit: {[creepName:string]: any};
+
+	init(): void;
+	refresh(): void;
+	build(): void;
+}
+
+declare var Cobal: ICobal;
+
+declare function print(...args: any[]): void;
+
+interface Coord {
+	x: number;
+	y: number;
 }
 
 interface RoomCoord {
@@ -50,7 +55,7 @@ interface ProtoCreep {
 }
 
 interface ProtoCreepOptions {
-	assingment?: RoomObject;
+	assignment?: RoomObject;
 	patternRepetitionLimit?: number;
 }
 
@@ -60,8 +65,8 @@ interface ProtoRoomObject {
 }
 
 interface ProtoPos {
-	x: string;
-	y: string;
+	x: number;
+	y: number;
 	roomName: string;
 }
 
@@ -73,6 +78,6 @@ interface HasRef {
 	ref: string;
 }
 
-interface HasId {
+interface HasID {
 	id: string;
 }

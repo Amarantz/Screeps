@@ -1,19 +1,35 @@
 {
   "compilerOptions": {
+    "allowJs": true,
     "module": "esnext",
     "lib": ["esnext"],
     "target": "es2017",
     "moduleResolution": "Node",
-    "outDir": "dist",
+    "newLine": "CRLF",
+    "outDir": "tsc-out",
     "baseUrl": "src/",
-    "sourceMap": true,
+    "sourceMap": false,
     "strict": true,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": false,
+    "skipLibCheck": true,
     "experimentalDecorators": true,
-    "noImplicitReturns": true,
+    "allowUnusedLabels": true,
     "allowSyntheticDefaultImports": true,
-    "allowUnreachableCode": false
+    "allowUnreachableCode": false,
+    "removeComments": false
   },
+  "include": [
+    "src/**/*"
+  ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "typedocOptions": {
+    "mode": "file",
+    "out": "../Cobal-docs/docs",
+    "ignoreCompilerErrors": true,
+    "excludeNotExported": true,
+    "readme": "none"
+  }
 }

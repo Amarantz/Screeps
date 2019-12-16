@@ -88,7 +88,7 @@ function time(): string {
 	return color(Game.time.toString(), 'gray');
 }
 
-export function debug(thing: { name: string, memory: any, pos: RoomPosition }, ...args: any[]) {
+export function debug(this: any, thing: { name: string, memory: any, pos: RoomPosition }, ...args: any[]) {
 	if (thing.memory && thing.memory.debug) {
 		this.debug(`${thing.name} @ ${thing.pos.print}: `, args);
 	}
@@ -108,7 +108,7 @@ export class Log {
 		console.log('Source mapping deprecated.');
 		// }
     }
-    
+
 	setLogLevel(value: number) {
 		let changeValue = true;
 		switch (value) {
@@ -161,7 +161,7 @@ export class Log {
 	}
 
 	trace(error: Error): Log {
-		if (this.level >= LogLevels.ERROR && error.stack) {
+		if (this.level >= LogLevel.ERROR && error.stack) {
 			console.log(this.resolveStack(error.stack));
 		}
 
@@ -174,21 +174,21 @@ export class Log {
 
 	error(...args: any[]): undefined {
 		if (this.level >= LogLevel.ERROR) {
-			console.log.apply(this, this.buildArguments(LogLevels.ERROR).concat([].slice.call(args)));
+			console.log.apply(this, this.buildArguments(LogLevel.ERROR).concat([].slice.call(args)));
 		}
 		return undefined;
 	}
 
 	warning(...args: any[]): undefined {
 		if (this.level >= LogLevel.WARNING) {
-			console.log.apply(this, this.buildArguments(LogLevels.WARNING).concat([].slice.call(args)));
+			console.log.apply(this, this.buildArguments(LogLevel.WARNING).concat([].slice.call(args)));
 		}
 		return undefined;
 	}
 
 	alert(...args: any[]): undefined {
 		if (this.level >= LogLevel.ALERT) {
-			console.log.apply(this, this.buildArguments(LogLevels.ALERT).concat([].slice.call(args)));
+			console.log.apply(this, this.buildArguments(LogLevel.ALERT).concat([].slice.call(args)));
 		}
 		return undefined;
 	}
@@ -201,14 +201,14 @@ export class Log {
 
 	info(...args: any[]): undefined {
 		if (this.level >= LogLevels.INFO) {
-			console.log.apply(this, this.buildArguments(LogLevels.INFO).concat([].slice.call(args)));
+			console.log.apply(this, this.buildArguments(LogLevel.INFO).concat([].slice.call(args)));
 		}
 		return undefined;
 	}
 
 	debug(...args: any[]) {
 		if (this.level >= LogLevels.DEBUG) {
-			console.log.apply(this, this.buildArguments(LogLevels.DEBUG).concat([].slice.call(args)));
+			console.log.apply(this, this.buildArguments(LogLevel.DEBUG).concat([].slice.call(args)));
 		}
 	}
 

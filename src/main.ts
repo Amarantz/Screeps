@@ -1,5 +1,3 @@
-import "./prototypes/Creep";
-import "./prototypes/RoomPosition";
 import Havester from "creeps/roles/havester";
 import Upgrader from "creeps/roles/upgrader";
 import Worker from "creeps/roles/worker";
@@ -7,8 +5,7 @@ import Filler from "creeps/roles/filler";
 import Transporter from "creeps/roles/transport";
 
 import Mem from "memory/memory";
-import Unit from "unit/unit";
-import { Traveler } from "traveler/traveler";
+import Cobal from "Cobal";
 
 const maxHavesters = 2;
 const maxUpgraders = 4;
@@ -17,7 +14,7 @@ const maxTransporters = 2;
 const maxFillers = 2;
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
-export const loop = () => {
+const main = () => {
     Mem.clean();
 
     const harvesters = _.filter(Game.creeps, (creep) => creep.memory.role === 'havester');
@@ -90,3 +87,16 @@ export const loop = () => {
         }
     }
 };
+
+const cobal_loop = () => {
+    global.Cobal = new Cobal();
+}
+
+export const loop = () => {
+    main();
+    cobal_loop();
+}
+
+function onGobalReset() {
+    Mem.format();
+}
