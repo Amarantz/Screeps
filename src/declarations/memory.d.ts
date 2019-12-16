@@ -1,4 +1,7 @@
 // memory extension samples
+interface RawMemory {
+    _parsed: any;
+}
 interface CreepMemory {
     [_MEM.BASE]?: string;
     role: string;
@@ -8,12 +11,15 @@ interface CreepMemory {
 }
 
 interface Memory {
+    Cobal: {},
+    forman: any;
+    bases: {[name:string]: any};
     creeps: {[name:string]: CreepMemory};
     flags: {[name:string]: FlagMemory};
     resetBucket?: boolean;
     haltTick?: number;
-    Rooms: {[roomName: string]: Room};
-    Spawns: {[name:string]: SpawnMemory};
+    rooms: {[roomName: string]: RoomMemory};
+    spawns: {[name:string]: SpawnMemory};
     stats: any;
     constructionSites: {[id:string]: number};
     [otherProperty:string]: any;

@@ -1,6 +1,6 @@
 'use strict'
 
-import clear from 'rollup-plugin-clear'
+import clean from 'rollup-plugin-clean'
 import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
 import typescript from 'rollup-plugin-typescript2'
@@ -27,7 +27,7 @@ export default {
   },
 
   plugins: [
-    clear({ targets: ['dist'] }),
+    clean(),
     resolve(),
     commonjs(),
     typescript({tsconfig: './tsconfig.json'}),

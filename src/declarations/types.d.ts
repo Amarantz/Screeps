@@ -2,8 +2,13 @@
 declare var global: any;
 declare namespace NodeJS {
   interface Global {
-	log: any;
+	age?: number;
 	Cobal: ICobal;
+	Memory: Memory;
+	print(...args: any[]): string;
+	deref(ref: string): RoomObject | null;
+	derefRoomPosition(protoPos: ProtoPos): RoomPosition;
+	gc(quick?: boolean): void;
   }
 }
 
@@ -21,12 +26,14 @@ interface ICobal {
 	expiration: number;
 	unit: {[creepName:string]: any};
 
-	init(): void;
-	refresh(): void;
-	build(): void;
+	init: () => void;
+	refresh: () => void;
+	build: () => void;
+	run: () => void;
+	postRun(): void;
 }
 
-declare var Cobal: ICobal;
+declare let Cobal: ICobal;
 
 declare function print(...args: any[]): void;
 

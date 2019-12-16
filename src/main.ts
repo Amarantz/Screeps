@@ -1,3 +1,6 @@
+import './prototypes/Room';
+import './prototypes/RoomPosition';
+import './prototypes/Structures';
 import Havester from "creeps/roles/havester";
 import Upgrader from "creeps/roles/upgrader";
 import Worker from "creeps/roles/worker";
@@ -5,7 +8,7 @@ import Filler from "creeps/roles/filler";
 import Transporter from "creeps/roles/transport";
 
 import Mem from "memory/memory";
-import Cobal from "Cobal";
+import Cobal from "./Cobal";
 
 const maxHavesters = 2;
 const maxUpgraders = 4;
@@ -15,8 +18,6 @@ const maxFillers = 2;
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
 const main = () => {
-    Mem.clean();
-
     const harvesters = _.filter(Game.creeps, (creep) => creep.memory.role === 'havester');
     const upgrader  = _.filter(Game.creeps, (creep) => creep.memory.role === 'upgrader');
     const transporters = _.filter(Game.creeps, (creep) => creep.memory.role === 'transporter');
@@ -89,7 +90,22 @@ const main = () => {
 };
 
 const cobal_loop = () => {
-    global.Cobal = new Cobal();
+    Mem.load();
+    if(!Mem.shouldRun()) return;
+    Mem.clean();
+
+    if(!global.Cobal || global.Cobal.shouldRebuild || Game.time >= global.Cobal.expiration){
+        delete global.Cobal;
+        Mem.garbageCollect(true);
+        global.Cobal = new Cobal();
+        global.Cobal.build();
+    } else {
+        global.Cobal.refresh();
+    }
+
+    global.Cobal.init();
+    global.Cobal.run();
+    global.Cobal.postRun();
 }
 
 export const loop = () => {
@@ -99,4 +115,10 @@ export const loop = () => {
 
 function onGobalReset() {
     Mem.format();
+
+    global.Cobal = new Cobal();
+    global.Cobal.build();
+    global.Cobal.init();
 }
+
+onGobalReset();

@@ -58,6 +58,7 @@
     "typescript": "^2.9.2"
   },
   "dependencies": {
+    "rollup-plugin-clean": "^1.0.0",
     "source-map": "~0.6.1"
   }
 }
