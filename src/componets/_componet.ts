@@ -9,10 +9,10 @@ export abstract class Component {
     commander: undefined;
     constructor(base: Base, instantiationObject: RoomObject, name: string, includePos = false){
         this.base = base;
-        this.room = instantiationObject.room;
+        this.room = instantiationObject.room as Room;
         this.pos = instantiationObject.pos;
         this.ref = includePos ? name + '@' + instantiationObject.pos.name : name + '@' + this.base.name;
-        this.base.refreshHiveClusters.push(this);
+        this.base.hiveClusters.push(this);
     }
 
     get print(): string {

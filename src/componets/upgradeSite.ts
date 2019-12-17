@@ -53,6 +53,7 @@ export class UpgradeSite extends Component {
     refresh(): void {
         this.memory = Mem.wrap(this.base.memory, 'upgradeSite');
         $.refreshRoom(this);
+        //@ts-ignore
         $.refresh(this, 'controller', 'batter', 'link');
     }
     spawnCommander(): void {
@@ -96,6 +97,7 @@ export class UpgradeSite extends Component {
                 if(this.controller.level == 8){
                     upgradePower = Math.min(upgradePower, 15);
                 }
+                return upgradePower;
             } else {
                 return 0;
             }
@@ -106,7 +108,9 @@ export class UpgradeSite extends Component {
         let originPos: RoomPosition | undefined;
         if(this.base.storage) {
             originPos = this.base.storage.pos;
+        //@ts-ignore
         } else if (this.base.roomPlanner && this.base.roomPlanner.storagePos){
+            //@ts-ignore
             originPos = this.base.roomPlanner.storagePos;
         } else {
             return

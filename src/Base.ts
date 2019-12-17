@@ -6,10 +6,13 @@ import { mergeSum } from "utils/utils";
 import { Cartographer, ROOMTYPE_CONTROLLER } from "utils/Cartographer";
 import { UpgradeSite } from "componets/upgradeSite";
 import { HandOfNod } from "componets/HandOfNod";
+import { Oblisk } from "componets/Oblisk";
+
 export enum BasesStage {
     MCV = 0,
     HAND_OF_NOD = 1,
     WAR_FACTOR = 2,
+
 }
 
 export enum DEFCON {
@@ -96,10 +99,16 @@ export class Base {
     defcon: number;
     breached: boolean;
     terminalState: undefined;
-    hiveClusters: never[];
+    hiveClusters: any[];
     commandCenter: undefined;
     handOfNod: any;
     upgradeSite: any;
+    Oblisk: Oblisk;
+    linkNetwork: undefined;
+    transportRequest: undefined;
+    roomPlanner: undefined;
+    roadLogistics: undefined;
+    logisticsnetwork: undefined;
     constructor(id: number, roomName:string, outposts: string[]) {
         this.id = id;
         this.name = roomName;

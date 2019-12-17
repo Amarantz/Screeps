@@ -5,9 +5,11 @@ const ERR_ROOM_ENERGY_CAPACITY_NOT_ENOUGH = -20;
 const ERR_SPECIFIED_SPAWN_BUSY = -21;
 
 export interface SpawnRequest {
+    //@ts-ignore
 	setup: CreepSetup;					// creep body generator to use
 	// overlord: Overlord;					// overlord requesting the creep
-	priority: number;					// priority of the request // TODO: WIP
+    priority: number;					// priority of the request // TODO: WIP
+    //@ts-ignore
 	partners?: CreepSetup[];			// partners to spawn along with the creep
 	options?: SpawnRequestOptions;		// options
 }
