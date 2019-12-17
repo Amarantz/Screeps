@@ -141,6 +141,7 @@ export class Base {
 
         this.hiveClusters.reverse();
     }
+    
     registerUtilities() {
         this.linkNetwork = undefined;
         this.logisticsnetwork = undefined;

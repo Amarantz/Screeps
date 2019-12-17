@@ -5,6 +5,7 @@ import Mem from "memory/memory";
 import { hasMinerals } from '../utils/utils';
 import { log } from "console/log";
 import { SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG } from "constants";
+import { Stats } from "fs";
 
 interface UpgradeSiteMemory {
     stats: {downtime:number};
@@ -42,7 +43,7 @@ export class UpgradeSite extends Component {
             if(inputSite){
                 return inputSite.pos;
             }
-            return this.calculateBatterPos() || log.alert(`Upgrade site at ${this.pos.print}: no BatteryPos!`);
+            return this.calculateBatteryPos() || log.alert(`Upgrade site at ${this.pos.print}: no BatteryPos!`);
         });
         if(this.batteryPos) this.base.destinations.push({pos: this.batteryPos, order: 0});
         $.set(this, 'link', () =>  this.pos.findClosestByLimitedRange(base.avaliableLinks, 3));
@@ -77,7 +78,9 @@ export class UpgradeSite extends Component {
         }
     }
     run(): void {
-        throw new Error("Method not implemented.");
+        if(Game.time % 25 == 7 && this.base.level >= 2){
+            this.buildBatteryIfMissing();
+        }
     }
 
     private getUpgradePowerNeeded():number {
@@ -99,7 +102,7 @@ export class UpgradeSite extends Component {
         })
     }
 
-    private caclulateBatteryPos(): RoomPosition | undefined {
+    private calculateBatteryPos(): RoomPosition | undefined {
         let originPos: RoomPosition | undefined;
         if(this.base.storage) {
             originPos = this.base.storage.pos;
@@ -123,5 +126,29 @@ export class UpgradeSite extends Component {
         }
     }
 
-    
+    private buildBatteryIfMissing(): void {
+        if(!this.battery && !this.findInputConstructionSite()){
+            const buildHere = this.batteryPos;
+            if(buildHere) {
+                const result = buildHere.createConstructionSite(STRUCTURE_CONTAINER);
+                if(result == OK){
+                    return;
+                } else {
+                    log.warning(`Upgrade site at ${this.pos.print}: cannot build battery! Result: ${result}`);
+                }
+            }
+        }
+    }
+
+    private stats() {
+        const defaults = {
+            downtime: 0,
+        }
+
+        if(!this.memory.stats) this.memory.stats = defaults;
+        _.defaults(this.memory.stats, defaults);
+
+        this.memory.stats.downtime = (this.memory.stats.downtime * (CREEP_LIFE_TIME - 1) + (this.battery ? +this.battery.isEmpty : 0)) / CREEP_LIFE_TIME;
+        // Stats.log(`bases.${this.base.name}.upgradeSite.downtime`, this.memory.stats.downtime);
+    }
 }
