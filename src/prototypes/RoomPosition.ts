@@ -35,9 +35,9 @@ Object.defineProperty(RoomPosition.prototype, 'room',{
     configurable: true,
 });
 
-RoomPosition.prototype.lookForStructure = (structureType: StructureConstant): Structure | undefined  => (
-    _.find(this.lookFor(LOOK_STRUCTURES), s => s.structureType === structureType)
-)
+RoomPosition.prototype.lookForStructure = function(structureType: StructureConstant): Structure | undefined  {
+    return _.find(this.lookFor(LOOK_STRUCTURES), s => s.structureType === structureType)
+}
 
 Object.defineProperty(RoomPosition.prototype, 'isEdge', {
     get() {
