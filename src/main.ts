@@ -109,16 +109,13 @@ const cobal_loop = () => {
 }
 
 export const loop = () => {
-    main();
     cobal_loop();
+    main();
 }
 
 function onGobalReset() {
     Mem.format();
-
     global.Cobal = new Cobal();
-    global.Cobal.build();
-    global.Cobal.init();
 }
 
 onGobalReset();

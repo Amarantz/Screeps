@@ -8,7 +8,7 @@ class Cobal implements ICobal {
     shouldRebuild: boolean;
     expiration: number;
     unit: {[creepName: string]: any; };
-    base: {[baseName:string]: any; };
+    bases: {[baseName:string]: any; };
     baseMap: {[roomName: string]: string};
 
     constructor() {
@@ -16,7 +16,7 @@ class Cobal implements ICobal {
         this.expiration = Game.time + 5;
         this.shouldRebuild = false;
         this.unit = {};
-        this.base = {};
+        this.bases = {};
         this.baseMap = {};
     }
 
@@ -24,13 +24,13 @@ class Cobal implements ICobal {
      * init
      */
     init() {
-        Object.keys(this.base).forEach(name => this.base[name].init());
+        Object.keys(this.bases).forEach(name => this.bases[name].init());
     }
     /**
      * refresh
      */
     refresh() {
-        Object.keys(this.base).forEach(name => this.base[name].refresh());
+        Object.keys(this.bases).forEach(name => this.bases[name].refresh());
     }
     /**
      * build
@@ -46,7 +46,7 @@ class Cobal implements ICobal {
      * run
      */
     run(): void{
-        Object.keys(this.base).forEach(name => this.base[name].run());
+        Object.keys(this.bases).forEach(name => this.bases[name].run());
     }
 
     postRun(): void {
@@ -62,7 +62,7 @@ class Cobal implements ICobal {
             }
         }
 
-        Object.keys(baseOutpost).forEach((name, index) => (this.base[name] = new Base(index, name, baseOutpost[name])));
+        Object.keys(baseOutpost).forEach((name, index) => (this.bases[name] = new Base(index, name, baseOutpost[name])));
     }
 
     private wrapCreeps(){

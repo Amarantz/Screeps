@@ -113,7 +113,7 @@ interface RoomPosition {
     lookFor<T extends keyof AllLookAtTypes>(StructureTypes: T): Array<AllLookAtTypes[T]>;
     lookForStructure(structureType: StructureConstant): Structure | undefined;
     isWalkable(ignoreCreeps?: boolean):boolean;
-    availableNeighbors(ignoreCreeps?: boolean): boolean;
+    availableNeighbors(ignoreCreeps?: boolean): RoomPosition[];
     getPositionAtDirection(direction: DirectionConstant, range?: number): RoomPosition;
     getMultiRoomRangeTo(pos: RoomPosition):number;
     findClosestByLimitedRange<T>(objects: T[] | RoomPosition[], rangeLimit: number,

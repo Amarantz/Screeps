@@ -25,6 +25,7 @@ interface ICobal {
 	shouldRebuild: boolean;
 	expiration: number;
 	unit: {[creepName:string]: any};
+	bases: {[roomName:string]: any};
 
 	init: () => void;
 	refresh: () => void;
