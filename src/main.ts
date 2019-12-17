@@ -1,5 +1,10 @@
+import './prototypes/Creeps';
+import './prototypes/Miscellaneous';
 import './prototypes/Room';
+import './prototypes/RoomObject';
 import './prototypes/RoomPosition';
+import './prototypes/RoomStructures';
+import './prototypes/RoomVisuals';
 import './prototypes/Structures';
 import Havester from "creeps/roles/havester";
 import Upgrader from "creeps/roles/upgrader";

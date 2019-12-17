@@ -70,6 +70,8 @@ export default class Mem {
         Mem.cleanFlags();
         Mem.cleanBases();
         Mem.cleanConstructionSites();
+        Mem.cleanPathingMemory();
+        Mem.cleanHeap();
     }
 
     static wrap(memory: any, memName:string, defaults = {}, deep = false) {
@@ -83,6 +85,17 @@ export default class Mem {
         }
         return memory[memName];
     }
+
+    private static formatPathingMemory() {
+		if (!Memory.pathing) {
+			Memory.pathing = {}; // Hacky workaround
+		}
+		_.defaults(Memory.pathing, {
+			paths            : {},
+			distances        : {},
+			weightedDistances: {},
+		});
+	}
 
     private static cleanCreeps(){
         // Automatically delete memory of missing creeps
@@ -139,9 +152,40 @@ export default class Mem {
         }
     }
 
+    private static cleanHeap(): void {
+        if(Game.time % HEAP_CLEAN_FREQUENCY == HEAP_CLEAN_FREQUENCY - 3){
+            if(Game.cpu.bucket < BUCKET_CPU_HALT){
+                (<any>Game.cpu).halt();
+            } else if (Game.cpu.bucket < BUCKET_CLEAR_CACHE) {
+                delete global._cache;
+                this.initGlobalMemory();
+            }
+        }
+    }
+
+    private static _setDeep(object: any, keys: string[], value: any): void {
+        const key = _.first(keys);
+        keys = _.drop(keys);
+        if(keys.length === 0) {
+            object[key] = value;
+            return;
+        } else {
+            if(!object[key]){
+                object[key] = {};
+            }
+            return Mem._setDeep(object[key], keys, value);
+        }
+    }
+
+    static setDeep(object: any, keyString: string, value: any): void {
+        const keys = keyString.split('.');
+        return Mem._setDeep(object, keys, value);
+    }
+
     static format() {
         this.formatDefaultMemory();
         this.formatCobalMemory();
+        this.formatPathingMemory();
 
         if(!Memory.settings){
             Memory.settings = {} as any;
@@ -156,6 +200,7 @@ export default class Mem {
         if(!Memory.constructionSites){
             Memory.constructionSites = {};
         }
+        this.initGlobalMemory();
     }
 
     private static formatDefaultMemory() {
@@ -179,4 +224,51 @@ export default class Mem {
             Memory.bases = {}
         }
     }
+
+    private static initGlobalMemory(){
+        global._cache = <IGlobalCache>{
+            accessed: {},
+            expiration: {},
+            structures: {},
+            numbers: {},
+            lists: {},
+            costMatrices: {},
+            roomPositions: {},
+            things: {},
+        }
+    }
+
+    private static cleanPathingMemory() {
+		const CLEAN_FREQUENCY = 5;
+		if (Game.time % CLEAN_FREQUENCY == 0) {
+			const distanceCleanProbability = 0.001 * CLEAN_FREQUENCY;
+			const weightedDistanceCleanProbability = 0.01 * CLEAN_FREQUENCY;
+
+			// Randomly clear some cached path lengths
+			for (const pos1Name in Memory.pathing.distances) {
+				if (_.isEmpty(Memory.pathing.distances[pos1Name])) {
+					delete Memory.pathing.distances[pos1Name];
+				} else {
+					for (const pos2Name in Memory.pathing.distances[pos1Name]) {
+						if (Math.random() < distanceCleanProbability) {
+							delete Memory.pathing.distances[pos1Name][pos2Name];
+						}
+					}
+				}
+			}
+
+			// Randomly clear weighted distances
+			for (const pos1Name in Memory.pathing.weightedDistances) {
+				if (_.isEmpty(Memory.pathing.weightedDistances[pos1Name])) {
+					delete Memory.pathing.weightedDistances[pos1Name];
+				} else {
+					for (const pos2Name in Memory.pathing.weightedDistances[pos1Name]) {
+						if (Math.random() < weightedDistanceCleanProbability) {
+							delete Memory.pathing.weightedDistances[pos1Name][pos2Name];
+						}
+					}
+				}
+			}
+		}
+	}
 }

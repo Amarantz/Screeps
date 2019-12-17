@@ -4,7 +4,9 @@ interface RawMemory {
 }
 interface CreepMemory {
     [_MEM.BASE]?: string;
+    [_MEM.COMMANDER]?: string;
     role: string;
+    task?: any;
     source?: string;
     target?: string | undefined;
     debug?: boolean;
