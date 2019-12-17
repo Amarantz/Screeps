@@ -3,11 +3,13 @@ interface RawMemory {
     _parsed: any;
 }
 interface CreepMemory {
-    [_MEM.BASE]?: string;
+	[_MEM.BASE]?: string;
+	[_MEM.COMMANDER]?: string;
     role: string;
     source?: string;
     target?: string | undefined;
-    debug?: boolean;
+	debug?: boolean;
+	task?: protoTask;
 }
 
 interface Memory {

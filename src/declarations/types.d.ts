@@ -2,14 +2,26 @@
 declare var global: any;
 declare namespace NodeJS {
   interface Global {
-	age?: number;
-	Cobal: ICobal;
-	Memory: Memory;
-	print(...args: any[]): string;
-	deref(ref: string): RoomObject | null;
-	derefRoomPosition(protoPos: ProtoPos): RoomPosition;
-	gc(quick?: boolean): void;
+    age?: number;
+    _cache: IGlobalCache;
+    Cobal: ICobal;
+    Memory: Memory;
+    print(...args: any[]): string;
+    deref(ref: string): RoomObject | null;
+    derefRoomPosition(protoPos: ProtoPos): RoomPosition;
+    gc(quick?: boolean): void;
   }
+}
+
+interface IGlobalCache {
+  accessed: {[key:string]: number};
+  expirations: {[key:string]: number};
+  structures: {[key:string]: Structure[]};
+  numbers: {[key:string]: number};
+  lists: {[key:string]: any[]};
+  costMatrix: {[key:string]: CostMatrix};
+  roomPostions: {[key:string]: RoomPosition | undefined };
+  things: {[key:string]: undefined | HasID | HadID[]};
 }
 
 interface ICache {
@@ -35,6 +47,8 @@ interface ICobal {
 }
 
 declare let Cobal: ICobal;
+
+declare let _cache: IGlobalCache;
 
 declare function print(...args: any[]): void;
 
