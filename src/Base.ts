@@ -5,6 +5,7 @@ import { spawn } from "child_process";
 import { mergeSum } from "utils/utils";
 import { Cartographer, ROOMTYPE_CONTROLLER } from "utils/Cartographer";
 import { UpgradeSite } from "componets/upgradeSite";
+import { HandOfNod } from "componets/HandOfNod";
 export enum BasesStage {
     MCV = 0,
     HAND_OF_NOD = 1,
@@ -141,7 +142,7 @@ export class Base {
 
         this.hiveClusters.reverse();
     }
-    
+
     registerUtilities() {
         this.linkNetwork = undefined;
         this.logisticsnetwork = undefined;

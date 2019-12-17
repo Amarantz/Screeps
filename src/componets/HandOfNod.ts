@@ -1,4 +1,5 @@
 import { Component } from "./_componet";
+import { Base } from "Base";
 
 const ERR_ROOM_ENERGY_CAPACITY_NOT_ENOUGH = -20;
 const ERR_SPECIFIED_SPAWN_BUSY = -21;
@@ -38,6 +39,9 @@ const HatcheryMemoryDefaults: HandOfNodMemory = {
 };
 
 export class HandOfNod extends Component {
+    constructor(base: Base, headSpawn: StructureSpawn){
+        super(base, headSpawn, 'hand_of_nod');
+    }
     refresh(): void {
         throw new Error("Method not implemented.");
     }
