@@ -1,12 +1,11 @@
 export default class GameCache implements ICache {
-    commander: {[commanderName:string]: {[roleName: string]: string[]}}
     creepsByBase: { [baseName: string]: Creep[]; };
     targets: { [ref: string]: string[]; };
     outpostFlags: Flag[];
     commanders: {[commander:string]: {[roleName:string]: string[]}};
 
     constructor() {
-        this.commander = {};
+        this.commanders = {};
         this.creepsByBase = {};
         this.targets = {};
         this.outpostFlags = [];
@@ -29,10 +28,10 @@ export default class GameCache implements ICache {
     }
 
     private cacheCommanders() {
-        this.commander = {};
+        this.commanders = {};
         const creepNamesByCommander = _.groupBy(Object.keys(Game.creeps), name => Game.creeps[name].memory[_MEM.COMMANDER]);
         Object.keys(creepNamesByCommander).forEach(ref => {
-            this.commander[ref] = _.groupBy(creepNamesByCommander[ref], (name) => Game.creeps[name].memory.role)
+            this.commanders[ref] = _.groupBy(creepNamesByCommander[ref], (name) => Game.creeps[name].memory.role)
         })
     }
 

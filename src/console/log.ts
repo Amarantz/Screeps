@@ -171,12 +171,14 @@ export class Log {
 	}
 
 	throw(e: Error) {
+        //@ts-ignore
 		console.log.apply(this, this.buildArguments(FATAL).concat([color(e.toString(), fatalColor)]));
 	}
 
 	error(...args: any[]): undefined {
         //@ts-ignore
 		if (this.level >= LogLevel.ERROR) {
+            //@ts-ignore
 			console.log.apply(this, this.buildArguments(LogLevel.ERROR).concat([].slice.call(args)));
 		}
 		return undefined;
@@ -185,6 +187,7 @@ export class Log {
 	warning(...args: any[]): undefined {
         //@ts-ignore
 		if (this.level >= LogLevel.WARNING) {
+            //@ts-ignore
 			console.log.apply(this, this.buildArguments(LogLevel.WARNING).concat([].slice.call(args)));
 		}
 		return undefined;
@@ -193,6 +196,7 @@ export class Log {
 	alert(...args: any[]): undefined {
         //@ts-ignore
 		if (this.level >= LogLevel.ALERT) {
+            //@ts-ignore
 			console.log.apply(this, this.buildArguments(LogLevel.ALERT).concat([].slice.call(args)));
 		}
 		return undefined;
@@ -207,6 +211,7 @@ export class Log {
 	info(...args: any[]): undefined {
         //@ts-ignore
 		if (this.level >= LogLevel.INFO) {
+            //@ts-ignore
 			console.log.apply(this, this.buildArguments(LogLevel.INFO).concat([].slice.call(args)));
 		}
 		return undefined;
@@ -215,6 +220,7 @@ export class Log {
 	debug(...args: any[]) {
         //@ts-ignore
 		if (this.level >= LogLevel.DEBUG) {
+            //@ts-ignore
 			console.log.apply(this, this.buildArguments(LogLevel.DEBUG).concat([].slice.call(args)));
 		}
 	}
@@ -225,7 +231,8 @@ export class Log {
 		}
 	}
 
-	printObject(obj: any) {
+    printObject(obj: any) {
+        //@ts-ignore
 		console.log.apply(this, this.buildArguments(LogLevel.DEBUG).concat(JSON.stringify(obj)));
 	}
 

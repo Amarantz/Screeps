@@ -34,6 +34,7 @@ declare const enum _MEM {
     BASE = 'B',
     COMMANDER = 'C',
     DISTANCE = 'D',
+    OVERLORD = "OVERLORD"
 }
 declare const enum _RM {
     AVOID = 'a',

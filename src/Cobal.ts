@@ -12,6 +12,10 @@ class Cobal implements ICobal {
     bases: {[baseName:string]: any; };
     baseMap: {[roomName: string]: string};
     exceptions: Error[];
+    static commander: any;
+    static cache: any;
+    static unit: any;
+    static commanders: any;
 
     constructor() {
         this.cache = new Cache();

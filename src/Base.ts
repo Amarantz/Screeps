@@ -109,6 +109,7 @@ export class Base {
     roomPlanner: undefined;
     roadLogistics: undefined;
     logisticsnetwork: undefined;
+    spawnGroup: any;
     constructor(id: number, roomName:string, outposts: string[]) {
         this.id = id;
         this.name = roomName;
