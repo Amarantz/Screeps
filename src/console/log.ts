@@ -95,7 +95,8 @@ export function debug(this: any, thing: { name: string, memory: any, pos: RoomPo
 }
 
 export class Log {
-	static sourceMap: any;
+    static sourceMap: any;
+
 
 	static loadSourceMap() {
 		// try {
@@ -161,6 +162,7 @@ export class Log {
 	}
 
 	trace(error: Error): Log {
+        //@ts-ignore
 		if (this.level >= LogLevel.ERROR && error.stack) {
 			console.log(this.resolveStack(error.stack));
 		}
@@ -173,6 +175,7 @@ export class Log {
 	}
 
 	error(...args: any[]): undefined {
+        //@ts-ignore
 		if (this.level >= LogLevel.ERROR) {
 			console.log.apply(this, this.buildArguments(LogLevel.ERROR).concat([].slice.call(args)));
 		}
@@ -180,6 +183,7 @@ export class Log {
 	}
 
 	warning(...args: any[]): undefined {
+        //@ts-ignore
 		if (this.level >= LogLevel.WARNING) {
 			console.log.apply(this, this.buildArguments(LogLevel.WARNING).concat([].slice.call(args)));
 		}
@@ -187,6 +191,7 @@ export class Log {
 	}
 
 	alert(...args: any[]): undefined {
+        //@ts-ignore
 		if (this.level >= LogLevel.ALERT) {
 			console.log.apply(this, this.buildArguments(LogLevel.ALERT).concat([].slice.call(args)));
 		}
@@ -200,14 +205,16 @@ export class Log {
 	}
 
 	info(...args: any[]): undefined {
-		if (this.level >= LogLevels.INFO) {
+        //@ts-ignore
+		if (this.level >= LogLevel.INFO) {
 			console.log.apply(this, this.buildArguments(LogLevel.INFO).concat([].slice.call(args)));
 		}
 		return undefined;
 	}
 
 	debug(...args: any[]) {
-		if (this.level >= LogLevels.DEBUG) {
+        //@ts-ignore
+		if (this.level >= LogLevel.DEBUG) {
 			console.log.apply(this, this.buildArguments(LogLevel.DEBUG).concat([].slice.call(args)));
 		}
 	}

@@ -28,6 +28,15 @@ export const hasJustSpawned = ():boolean => (
     _.keys(Cobal.bases).length == 1 && _.keys(Game.creeps).length == 0 && _.keys(Game.spawns).length == 1
 );
 
+export function hasMinerals(store: { [resourceType: string]: number }): boolean {
+	for (const resourceType in store) {
+		if (resourceType != RESOURCE_ENERGY && (store[<ResourceConstant>resourceType] || 0) > 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 export const onPublicsServer = ():boolean => (
     Game.shard.name.includes('shard')
 );
