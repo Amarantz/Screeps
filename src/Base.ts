@@ -110,6 +110,7 @@ export class Base {
     roadLogistics: undefined;
     logisticsnetwork: undefined;
     spawnGroup: any;
+    templeOfNod: any;
     constructor(id: number, roomName:string, outposts: string[]) {
         this.id = id;
         this.name = roomName;

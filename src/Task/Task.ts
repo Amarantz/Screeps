@@ -1,5 +1,5 @@
 import {log} from '../console/log';
-import {Unit} from '../unit/unit';
+import Unit from '../unit/unit';
 import { initializeTask } from './initializer';
 
 type targetType = {ref: string, pos: ProtoPos};
