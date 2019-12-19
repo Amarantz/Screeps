@@ -45,6 +45,9 @@ export interface CommanderMemory {
 const CommanderMemoryDefaults: CommanderMemory = {};
 
 export abstract class Commander {
+	shouldBoost(arg0: this): boolean {
+		throw new Error("Method not implemented.");
+	}
     protected initializer: CommanderInitializer | Base;
     room: Room | undefined;
     priority: number;
@@ -200,7 +203,7 @@ export abstract class Commander {
         }
     }
 
-    preInit(): 
+    preInit():
 
 }
 
