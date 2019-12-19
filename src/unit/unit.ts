@@ -5,30 +5,32 @@ import { Movement, MoveOptions } from "movement/Movement";
 import { Base } from "Base";
 import { Task } from "Task/Task";
 import { initializeTask } from "Task/initializer";
+import { isUnit } from "declarations/typeGuards";
+import { Commander } from "commander/Commander";
 
-export function setOverlord(creep: Unit | Creep, newOverlord: Commander | null) {
+export function setCommander(creep: Unit | Creep, newCommander: Commander | null) {
 	// Remove cache references to old assignments
 	const roleName = creep.memory.role;
 	const ref = creep.memory[_MEM.COMMANDER];
-	const oldCommander: Commader | null = ref ? Cobal.commander[ref] : null;
-	if (ref && Cobal.cache.commander[ref] && Cobal.cache.commanders[ref][roleName]) {
-		_.remove(Cobal.cache.commander[ref][roleName], name => name == creep.name);
+	const oldCommander: Commander | null = ref ? global.Cobal.commander[ref] : null;
+	if (ref && global.Cobal.cache.commander[ref] && global.Cobal.cache.commanders[ref][roleName]) {
+		_.remove(global.Cobal.cache.commander[ref][roleName], name => name == creep.name);
 	}
-	if (newOverlord) {
+	if (newCommander) {
 		// Change to the new overlord's colony
-		creep.memory[_MEM.BASE] = newOverlord.colony.name;
+		creep.memory[_MEM.BASE] = newCommander.base.name;
 		// Change assignments in memory
-		creep.memory[_MEM.COMMANDER] = newOverlord.ref;
+		creep.memory[_MEM.COMMANDER] = newCommander.ref;
 		// Update the cache references
-		if (!Cobal.cache.commanders[newOverlord.ref]) {
-			Cobal.cache.commanders[newOverlord.ref] = {};
+		if (!global.Cobal.cache.commanders[newCommander.ref]) {
+			global.Cobal.cache.commanders[newCommander.ref] = {};
 		}
-		if (!Cobal.cache.commanders[newOverlord.ref][roleName]) {
-			Cobal.cache.commanders[newOverlord.ref][roleName] = [];
+		if (!global.Cobal.cache.commanders[newCommander.ref][roleName]) {
+			global.Cobal.cache.commanders[newCommander.ref][roleName] = [];
 		}
-		Cobal.cache.overlords[newOverlord.ref][roleName].push(creep.name);
+		global.Cobal.cache.overlords[newCommander.ref][roleName].push(creep.name);
 	} else {
-		creep.memory[_MEM.COMMANDER] = null;
+		creep.memory[_MEM.COMMANDER] = undefined;
 	}
 	if (oldCommander) oldCommander.recalculateCreeps();
 	if (newCommander) newCommander.recalculateCreeps();
@@ -36,7 +38,7 @@ export function setOverlord(creep: Unit | Creep, newOverlord: Commander | null) 
 
 
 export function normalizeUnit(creep: Unit | Creep): Unit | Creep {
-	return Cobal.unit[creep.name] || creep;
+	return global.Cobal.unit[creep.name] || creep;
 }
 
 export function toCreep(creep: Unit | Creep): Creep {
@@ -63,7 +65,7 @@ interface FleeOptions {
 
 export function getCommander(creep: Unit | Creep): Commander | null {
 	if (creep.memory[_MEM.COMMANDER]) {
-		return Cobal.commanders[creep.memory[_MEM.COMMANDER]!] || null;
+		return global.Cobal.commanders[creep.memory[_MEM.COMMANDER]!] || null;
 	} else {
 		return null;
 	}
@@ -124,9 +126,9 @@ export default class Unit {
         this.lifetime = this.getBodyparts(CLAIM) > 0 ? CREEP_CLAIM_LIFE_TIME : CREEP_LIFE_TIME;
         this.actionLog = {};
         this.blockMovement = false;
-        Cobal.unit[this.name] = this;
+        global.Cobal.unit[this.name] = this;
         global[this.name] = this;
-        if(!notifyWhenAttacked && (this.ticksToLive || 0) >= this.lifetime - NEW_COBAL_INTERVAL + 1)) {
+        if(!notifyWhenAttacked && (this.ticksToLive || 0) >= this.lifetime - NEW_COBAL_INTERVAL + 1) {
             this.notifiyWhenAttacked(notifyWhenAttacked);
         }
     }
@@ -151,13 +153,15 @@ export default class Unit {
 			this.blockMovement = false;
 			this._task = null; // todo
         } else {
+			//@ts-ignore
 			log.debug(`Deleting from global`);
-			delete Cobal.unit[this.name];
+			delete global.Cobal.unit[this.name];
 			delete global[this.name];
 		}
     }
     debug(...args: any[]) {
 		if (this.memory.debug) {
+			//@ts-ignore
 			log.debug(this.print, args);
 		}
     }
@@ -171,7 +175,8 @@ export default class Unit {
 				// Shouldn't ever get here
 				console.log(`Error determining ticks to spawn for ${this.name} @ ${this.pos.print}!`);
 			}
-		}
+        }
+        return;
     }
     get print(): string {
 		return '<a href="#!/room/' + Game.shard.name + '/' + this.pos.roomName + '">[' + this.name + ']</a>';
@@ -704,6 +709,7 @@ export default class Unit {
 	run(): number | undefined {
 		if (this.task) {
 			return this.task.run();
-		}
+        }
+        return;
 	}
 }

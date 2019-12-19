@@ -3,6 +3,8 @@ import Cache from "caching/GameCache";
 import { getMaxListeners } from "cluster";
 import { Base } from "./Base";
 import { NEW_COBAL_INTERVAL } from "~settings";
+import Unit from "unit/unit";
+import { Commander } from "commander/Commander";
 
 class Cobal implements ICobal {
     cache: ICache;
@@ -11,11 +13,9 @@ class Cobal implements ICobal {
     unit: {[creepName: string]: any; };
     bases: {[baseName:string]: any; };
     baseMap: {[roomName: string]: string};
+    commanders: {[commanderName:string]: Commander;};
+    general: any;
     exceptions: Error[];
-    static commander: any;
-    static cache: any;
-    static unit: any;
-    static commanders: any;
 
     constructor() {
         this.cache = new Cache();
@@ -25,6 +25,7 @@ class Cobal implements ICobal {
         this.bases = {};
         this.baseMap = {};
         this.exceptions = [];
+        this.commanders = {};
     }
 
     /**
@@ -89,7 +90,9 @@ class Cobal implements ICobal {
     }
 
     private wrapCreeps(){
-
+        for(const creep in Game.creeps){
+            this.unit[creep] = new Unit(Game.creeps[creep]);
+        };
     }
 
     private registerDirectives(){

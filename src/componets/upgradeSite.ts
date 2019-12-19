@@ -128,6 +128,7 @@ export class UpgradeSite extends Component {
         if(inputPos) {
             return inputPos;
         }
+        return undefined;
     }
 
     private buildBatteryIfMissing(): void {

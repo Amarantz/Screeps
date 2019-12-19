@@ -1,15 +1,15 @@
 import { Component } from "./_componet";
 import { Base } from "Base";
+import { Commander } from "commander/Commander";
+import { CreepSetup } from "creeps/setups/CreepSetups";
 
 const ERR_ROOM_ENERGY_CAPACITY_NOT_ENOUGH = -20;
 const ERR_SPECIFIED_SPAWN_BUSY = -21;
 
 export interface SpawnRequest {
-    //@ts-ignore
 	setup: CreepSetup;					// creep body generator to use
-	// overlord: Overlord;					// overlord requesting the creep
+	commander: Commander;					// overlord requesting the creep
     priority: number;					// priority of the request // TODO: WIP
-    //@ts-ignore
 	partners?: CreepSetup[];			// partners to spawn along with the creep
 	options?: SpawnRequestOptions;		// options
 }

@@ -3,7 +3,7 @@ import {log} from '../console/log';
 import {hasPos} from '../declarations/typeGuards';
 import {Cartographer, ROOMTYPE_ALLEY, ROOMTYPE_SOURCEKEEPER} from '../utils/Cartographer';
 // import {Visualizer} from '../visuals/Visualizer';
-import {Unit} from '../unit/unit';
+import Unit from '../unit/unit';
 import {normalizePos} from './helpers';
 import {MoveOptions, SwarmMoveOptions} from './Movement';
 
@@ -27,7 +27,6 @@ export const MatrixTypes = {
 /**
  * Module for pathing-related operations.
  */
-@profile
 export class Pathing {
 
 	// Room avoidance methods ==========================================================================================
@@ -210,9 +209,9 @@ export class Pathing {
 		} else {
 			matrix = this.getSwarmTerrainMatrix(roomName, width, height, options.exitCost);
 		}
-		if (options.displayCostMatrix) {
-			Visualizer.displayCostMatrix(matrix, roomName);
-		}
+		// if (options.displayCostMatrix) {
+		// 	Visualizer.displayCostMatrix(matrix, roomName);
+		// }
 		return matrix;
 	}
 
@@ -797,6 +796,7 @@ export class Pathing {
 			}
 			return allowedRooms;
 		}
+		return;
 	}
 
 	/**
@@ -1027,6 +1027,7 @@ export class Pathing {
 				return pos;
 			}
 		}
+		return undefined;
 	}
 
 	/**

@@ -3,14 +3,29 @@ interface RawMemory {
     _parsed: any;
 }
 interface CreepMemory {
+    _go?: MoveData;
     [_MEM.BASE]?: string;
     [_MEM.COMMANDER]?: string;
     role: string;
-    task?: any;
+    data?: {
+        origin: string
+    }
     source?: string;
     target?: string | undefined;
 	debug?: boolean;
-	task?: protoTask;
+	task?: ProtoTask | undefined | null;
+}
+interface MoveData {
+	state: any[];
+	path: string;
+	roomVisibility: { [roomName: string]: boolean };
+	delay?: number;
+	fleeWait?: number;
+	destination?: ProtoPos;
+	priority?: number;
+	waypoints?: string[];
+	waypointsVisited?: string[];
+	portaling?: boolean;
 }
 
 interface Memory {
@@ -26,6 +41,25 @@ interface Memory {
     stats: any;
     constructionSites: {[id:string]: number};
     [otherProperty:string]: any;
+}
+
+interface LoggerMemory {
+	level: number;
+	showSource: boolean;
+	showTick: boolean;
+}
+
+interface PathingMemory {
+	paths: { [originName: string]: { [destinationName: string]: CachedPath; } };
+	distances: { [pos1Name: string]: { [pos2Name: string]: number; } };
+	weightedDistances: { [pos1Name: string]: { [pos2Name: string]: number; } };
+}
+
+
+interface CachedPath {
+	path: RoomPosition[];
+	length: number;
+	tick: number;
 }
 
 declare const enum _MEM {

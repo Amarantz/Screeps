@@ -51,6 +51,9 @@ export const getAllBases = (): Base[] => (
 );
 
 export class Base {
+    getCreepsByRole(role: string): _.List<unknown> {
+        throw new Error("Method not implemented.");
+    }
     id: number;
     name: string;
     ref: string;

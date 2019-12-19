@@ -123,7 +123,8 @@ export function getPosFromString(str: string | undefined | null): RoomPosition |
 	if (posName) {
 		const [roomName, x, y] = posName.split(':');
 		return new RoomPosition(parseInt(x, 10), parseInt(y, 10), roomName);
-	}
+    }
+    return undefined;
 }
 
 export function equalXYR(pos1: ProtoPos, pos2: ProtoPos): boolean {

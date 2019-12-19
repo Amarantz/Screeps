@@ -61,8 +61,6 @@ interface ICobal {
 declare let Cobal: ICobal;
 declare let _cache: IGlobalCache;
 
-declare let _cache: IGlobalCache;
-
 declare function print(...args: any[]): void;
 
 interface Coord {

@@ -7,7 +7,6 @@ export const getBoostedTaskName = 'getBoosted';
 
 export const MIN_LIFETIME_FOR_BOOST = 0.85;
 
-@profile
 export class TaskGetBoosted extends Task {
 
 	target: getBoostedTargetType;

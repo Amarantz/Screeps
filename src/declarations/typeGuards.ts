@@ -1,3 +1,5 @@
+import Unit from "unit/unit";
+
 export interface EnergyStructure extends Structure {
 	energy: number;
 	energyCapacity: number;
@@ -47,3 +49,11 @@ export function isCreep(obj: RoomObject): obj is Creep {
 export function isPowerCreep(obj: RoomObject): obj is PowerCreep {
 	return (<PowerCreep>obj).powers != undefined;
 }
+
+export function isUnit(creep: Creep | Unit): creep is Unit {
+	return (<Unit>creep).creep != undefined;
+}
+
+// export function isCombatUnit(unit: Creep | Unit | CombatUnit): unit is CombatUnit {
+// 	return (<CombatUnit>unit).isCombatUnit != undefined;
+// }
