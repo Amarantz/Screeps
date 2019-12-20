@@ -17,9 +17,11 @@ import { TaskRecharge } from "./instances/recharge";
 import { signControllerTargetType, TaskSignController } from "./instances/signController";
 import { transferTargetType, TaskTransfer } from "./instances/transfer";
 import { transferAllTargetType, TaskTransferAll } from "./instances/transferAll";
-import { upgradeTargetType, TaskUpgrade } from "./upgrade";
+import { upgradeTargetType, TaskUpgrade } from "./instances/upgrade";
 import { withdrawTargetType, TaskWithdraw } from "./instances/withdraw";
 import { withdrawAllTargetType, TaskWithdrawAll } from "./instances/withdrawAll";
+import { repairTargetType, TaskRepair } from "./instances/repair";
+import { reserveTargetType, TaskReserve } from "./instances/reserver";
 
 export class Tasks {
 

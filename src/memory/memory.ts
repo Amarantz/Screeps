@@ -88,7 +88,7 @@ export default class Mem {
 
     private static formatPathingMemory() {
 		if (!Memory.pathing) {
-			Memory.pathing = {}; // Hacky workaround
+			Memory.pathing = {} as PathingMemory; // Hacky workaround
 		}
 		_.defaults(Memory.pathing, {
 			paths            : {},

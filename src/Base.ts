@@ -7,6 +7,9 @@ import { Cartographer, ROOMTYPE_CONTROLLER } from "utils/Cartographer";
 import { UpgradeSite } from "componets/upgradeSite";
 import { HandOfNod } from "componets/HandOfNod";
 import { Oblisk } from "componets/Oblisk";
+import { RoomPlanner } from "roomPlanner/roomPlanner";
+import { DefaultCommander } from "commander/core/default";
+import { Component } from "componets/_componet";
 
 export enum BasesStage {
     MCV = 0,
@@ -21,6 +24,13 @@ export enum DEFCON {
     boostedInvasionNPC = 2,
     playerInvasion = 2,
     bigPlayerInvasion = 3,
+}
+
+export interface BunkerData {
+    anchor: RoomPosition;
+    topSpawn: StructureSpawn | undefined;
+    coreSpawn: StructureSpawn | undefined;
+    rightSpawn: StructureSpawn | undefined;
 }
 
 export interface BaseMemory {
@@ -51,66 +61,99 @@ export const getAllBases = (): Base[] => (
 );
 
 export class Base {
-    id: number;
-    name: string;
-    ref: string;
-    memory: BaseMemory;
+	memory: BaseMemory;								// Memory.colonies[name]
+	// Room associations
+	name: string;										// Name of the primary colony room
+	ref: string;
+	id: number; 										// Order in which colony is instantiated from Overmind
+	roomNames: string[];								// The names of all rooms including the primary room
+	room: Room;											// Primary (owned) room of the colony
+	outposts: Room[];									// Rooms for remote resource collection
+	rooms: Room[];										// All rooms including the primary room
+	pos: RoomPosition;
+	assets: { [resourceType: string]: number };
+	// Physical colony structures and roomObjects
+	controller: StructureController;					// These are all duplicated from room properties
+	spawns: StructureSpawn[];							// |
+	extensions: StructureExtension[];					// |
+	storage: StructureStorage | undefined;				// |
+	links: StructureLink[];								// |
+	availableLinks: StructureLink[];
+	// claimedLinks: StructureLink[];						// | Links belonging to hive cluseters excluding mining groups
+	// dropoffLinks: StructureLink[]; 						// | Links not belonging to a hiveCluster, used as dropoff
+	terminal: StructureTerminal | undefined;			// |
+	towers: StructureTower[];							// |
+	labs: StructureLab[];								// |
+	powerSpawn: StructurePowerSpawn | undefined;		// |
+	nuker: StructureNuker | undefined;					// |
+	observer: StructureObserver | undefined;			// |
+	tombstones: Tombstone[]; 							// | Tombstones in all colony rooms
+	drops: { [resourceType: string]: Resource[] }; 		// | Dropped resources in all colony rooms
+	sources: Source[];									// | Sources in all colony rooms
+	extractors: StructureExtractor[];					// | All extractors in owned and remote rooms
+	flags: Flag[];										// | Flags assigned to the colony
+	constructionSites: ConstructionSite[];				// | Construction sites in all colony rooms
+	repairables: Structure[];							// | Repairable structures, discounting barriers and roads
+	rechargeables: rechargeObjectType[];				// | Things that can be recharged from
+	// obstacles: RoomPosition[]; 							// | List of other obstacles, e.g. immobile creeps
+	destinations: { pos: RoomPosition, order: number }[];
+	// Hive clusters
+	hiveClusters: Component[];						// List of all hive clusters
+	commandCenter: CommandCenter | undefined;			// Component with logic for non-spawning structures
+	handOfNod: HandOfNod | undefined;						// Component to encapsulate spawner logic
+	spawnGroup: SpawnGroup | undefined;
+	evolutionChamber: EvolutionChamber | undefined; 	// Component for mineral processing
+	upgradeSite: UpgradeSite;							// Component to provide upgraders with uninterrupted energy
+	Oblisk: Oblisk;
+	// miningSites: { [sourceID: string]: MiningSite };	// Component with logic for mining and hauling
+	// extractionSites: { [extractorID: string]: ExtractionSite };
+	miningSites: { [flagName: string]: DirectiveHarvest };	// Component with logic for mining and hauling
+	extractionSites: { [flagName: string]: DirectiveExtract };
+	// Operational mode
+	bootstrapping: boolean; 							// Whether colony is bootstrapping or recovering from crash
+	isIncubating: boolean;								// If the colony is incubating
+	level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; 				// Level of the colony's main room
+	stage: number;										// The stage of the colony "lifecycle"
+	defcon: number;
+	terminalState: TerminalState | undefined;
+	breached: boolean;
+	lowPowerMode: boolean; 								// Activate if RCL8 and full energy
+	layout: 'twoPart' | 'bunker';						// Which room design colony uses
+	bunker: BunkerData | undefined;						// The center tile of the bunker, else undefined
+	// Creeps and subsets
+	creeps: Creep[];										// Creeps bound to the colony
+	creepsByRole: { [roleName: string]: Creep[] };		// Creeps hashed by their role name
+	// Resource requests
+	linkNetwork: LinkNetwork;
+	logisticsNetwork: LogisticsNetwork;
+	transportRequests: TransportRequestGroup;
+	// Overlords
+	commanders: {
+		default: DefaultCommander;
+		work: WorkerCommander;
+		logistics: TransportCommander;
+		scout?: RandomWalkerScoutCommander;
+	};
+	// Road network
+	roadLogistics: RoadLogistics;
+	// Room planner
+    roomPlanner: RoomPlanner;
 
     static settings = {
-        remoteSourcesByLevel: [0,1,2,3,4,5,6,7,9],
-        maxSourceDistance: 100,
-    }
-    room: any;
-    roomNames: string[];
-    outposts: Room[];
-    rooms: any[];
-    miningSites: {};
-    extractionSites: {};
-    creeps: Creep[];
-    creepsByRole: {[roleName:string]: Creep[]};
-    flags: Flag[];
-    destinations: { pos: RoomPosition, order: number }[];
-    spawns: StructureSpawn[];
-    sources: Source[];
-    extension:StructureExtension[];
-    controller: any;
-    extentions: any;
-    links: any;
-    avaliableLinks: any;
-    towers: any;
-    powerSpawn: any;
-    nuker: any;
-    observer: any;
-    terminal: undefined;
-    storage: StructureStorage | undefined;
-    pos: any;
-    labs: StructureLab[];
-    repairables: Structure[];
-    drops: {[resourceType:string]: Resource[]};
-    assets: {[resourceType:string]: number};
-    rechargeables: rechargeObjectType[];
-    extractors: StructureExtractor[];
-    constructionSites: ConstructionSite[];
-    tombstones: Tombstone[];
-    stage: BasesStage;
-    isIncubating: boolean;
-    bootstrapping: boolean;
-    level: number;
-    defcon: number;
-    breached: boolean;
-    terminalState: undefined;
-    hiveClusters: any[];
-    commandCenter: undefined;
-    handOfNod: any;
-    upgradeSite: any;
-    Oblisk: Oblisk;
-    linkNetwork: undefined;
-    transportRequest: undefined;
-    roomPlanner: undefined;
-    roadLogistics: undefined;
-    logisticsnetwork: undefined;
-    spawnGroup: any;
-    templeOfNod: any;
+		remoteSourcesByLevel: {
+			1: 1,
+			2: 2,
+			3: 3,
+			4: 4,
+			5: 5,
+			6: 6,
+			7: 7,
+			8: 9,
+		},
+		maxSourceDistance   : 100
+	};
+
+
     constructor(id: number, roomName:string, outposts: string[]) {
         this.id = id;
         this.name = roomName;
@@ -158,7 +201,7 @@ export class Base {
         this.linkNetwork = undefined;
         this.logisticsnetwork = undefined;
         this.transportRequest = undefined;
-        this.roomPlanner = undefined;
+        this.roomPlanner = new RoomPlanner(this);
         this.roadLogistics = undefined;
     }
 
@@ -187,8 +230,10 @@ export class Base {
         //@ts-ignore
         $.refresh(this, 'controller', 'extentions', 'links', 'towers', 'powerSpawn', 'nuker',
         'observer', 'spawns', 'storage', 'terminal', 'labs', 'sources', 'extractors', 'constructionSites', 'repairables');
+        //@ts-ignore
         $.set(this, 'constructionSites', () => _.flatten(_.map(this.rooms, room => room.constructionSites)), 10);
-        $.set(this, 'tombstones', () => _.flatten(_.map(this.rooms, room => room.tombstone)), 5);
+        //@ts-ignore
+        $.set(this, 'tombstones', () => _.flatten(_.map(this.rooms, room => room.tombstones)), 5);
         this.drops = _.merge(_.map(this.rooms, room => room.drops));
         this.assets = this.getAllAssets();
     }
@@ -204,10 +249,11 @@ export class Base {
     private registerRoomObjects_cache(){
         this.flags = [];
         this.destinations = [];
+        //@ts-ignore
         this.controller = this.room.controller;
-        this.extension = this.room.extension;
+        this.extensions = this.room.extensions;
         this.links = this.room.links;
-        this.avaliableLinks = _.clone(this.room.links);
+        this.availableLinks = _.clone(this.room.links);
         this.towers = this.room.towers;
         this.powerSpawn = this.room.powerSpawn;
         this.nuker = this.room.nuker;
@@ -219,7 +265,9 @@ export class Base {
         ));
         $.set(this, 'storage', () => (this.room.storage && this.room.storage.isActive() && this.room.storage || undefined));
         $.set(this, 'terminal', () => (this.room.terminal && this.room.terminal.isActive() && this.room.terminal || undefined));
+        //@ts-ignore
         this.pos = (this.storage || this.terminal || this.spawns[0] || this.controller.pos);
+        //@ts-ignore
         $.set(this, 'sources', () => (
             _.sortBy(_.flatten(_.map(this.rooms, room => room.sources)), source => source.pos.getMultiRoomRangeTo(this.pos))
         ));
@@ -233,10 +281,14 @@ export class Base {
                 // add directive for extractors
             });
         }
+        //@ts-ignore
         $.set(this, 'repairables', () => _.flatten(_.map(this.rooms, room => room.repairables)));
+        //@ts-ignore
         $.set(this, 'rechargeables', () => _.flatten(_.map(this.rooms, room => room.rechargeables)));
+        //@ts-ignore
         $.set(this, 'constructionSites', () => _.flatten(_.map(this.rooms, room => room.constructionSites)), 10);
-        $.set(this, 'tombstones', () => _.flatten(_.map(this.rooms, room => room.tombstone)), 5);
+        //@ts-ignore
+        $.set(this, 'tombstones', () => _.flatten(_.map(this.rooms, room => room.tombstones)), 5);
 
         this.drops = _.merge(_.map(this.rooms, room => room.drops));
         this.assets = this.getAllAssets();
@@ -275,7 +327,7 @@ export class Base {
         // this.lowPowerMode = Energetics.lowPowerMode(this);
         let defcon = DEFCON.safe;
         const defconDecaytime = 200;
-        if(this.room.dangerouseHostiles.length > 0 && !this.controller.safeMode){
+        if(this.room.dangerousHostiles.length > 0 && !this.controller.safeMode){
             //@ts-ignore
             const effectiveHostileCount = _.sum(_.map(this.room.dangerousHostiles, hostile => hostile.boosts.length > 0 ? 2 : 1));
             if(effectiveHostileCount >= 3) {

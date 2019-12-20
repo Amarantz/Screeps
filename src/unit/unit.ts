@@ -5,7 +5,7 @@ import { Movement, MoveOptions } from "movement/Movement";
 import { Base } from "Base";
 import { Task } from "Task/Task";
 import { initializeTask } from "Task/initializer";
-import { isUnit } from "declarations/typeGuards";
+import { isUnit, isCreep } from "declarations/typeGuards";
 import { Commander } from "commander/Commander";
 
 export function setCommander(creep: Unit | Creep, newCommander: Commander | null) {
@@ -184,21 +184,23 @@ export default class Unit {
 
     // Wrapped creep methods ===========================================================================================
 
-	// attack(target: Creep | Structure) {
-	// 	const result = this.creep.attack(target);
-	// 	if (result == OK) {
-	// 		this.actionLog.attack = true;
-	// 		if (isCreep(target)) {
-	// 			if (target.hitsPredicted == undefined) target.hitsPredicted = target.hits;
-	// 			target.hitsPredicted -= CombatIntel.predictedDamageAmount(this.creep, target, 'attack');
-	// 			// account for hitback effects
-	// 			if (this.creep.hitsPredicted == undefined) this.creep.hitsPredicted = this.creep.hits;
-	// 			this.creep.hitsPredicted -= CombatIntel.predictedDamageAmount(target, this.creep, 'attack');
-	// 		}
-	// 		if (this.memory.talkative) this.say(`💥`);
-	// 	}
-	// 	return result;
-	// }
+	attack(target: Creep | Structure) {
+		const result = this.creep.attack(target);
+		if (result == OK) {
+			this.actionLog.attack = true;
+			if (isCreep(target)) {
+				if (target.hitsPredicted == undefined) target.hitsPredicted = target.hits;
+				//@ts-ignore
+				target.hitsPredicted -= CombatIntel.predictedDamageAmount(this.creep, target, 'attack');
+				// account for hitback effects
+				if (this.creep.hitsPredicted == undefined) this.creep.hitsPredicted = this.creep.hits;
+				//@ts-ignore
+				this.creep.hitsPredicted -= CombatIntel.predictedDamageAmount(target, this.creep, 'attack');
+			}
+			if (this.memory.talkative) this.say(`💥`);
+		}
+		return result;
+	}
 
 	attackController(controller: StructureController) {
 		const result = this.creep.attackController(controller);

@@ -1,4 +1,4 @@
-import {CreepSetup} from './CreepSetup';
+import { CreepSetup } from './CreepSetups';
 
 
 export const Roles = {

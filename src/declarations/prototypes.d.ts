@@ -12,7 +12,7 @@ interface ConstructionSite {
 }
 
 interface Flag {
-
+	memory: FlagMemory;
 }
 
 type Sink = StructureSpawn |
@@ -104,7 +104,7 @@ interface RoomPosition {
     printPlain: string;
     room: Room | undefined;
     name: string;
-    coorName: string;
+    coordName: string;
     isEdge: boolean;
     isVisible: boolean;
     rangeToEdge: number;
@@ -173,9 +173,11 @@ interface StructureTower {
 interface StructureSpawn {
 	isFull: boolean;
 	isEmpty: boolean;
+	store: Store;
 
 	cost(bodyArray: string[]): number;
 }
+
 
 interface StructureController {
 	reservedByMe: boolean;
@@ -188,6 +190,7 @@ interface StructureController {
 interface StructureExtension {
 	isFull: boolean;
 	isEmpty: boolean;
+	store: Store;
 }
 
 interface StructureLink {

@@ -160,6 +160,39 @@ export abstract class Commander {
             setCommander(creep, this);
         }
     }
+    	/**
+	 * Wishlist of creeps to simplify spawning logic; includes automatic reporting
+	 */
+	protected wishlist(quantity: number, setup: CreepSetup, opts = {} as CreepRequestOptions) {
+		_.defaults(opts, {priority: this.priority, prespawn: DEFAULT_PRESPAWN, reassignIdle: false});
+		let creepQuantity: number;
+		if (opts.noLifetimeFilter) {
+			creepQuantity = (this._creeps[setup.role] || []).length;
+		} else if (_.has(this.initializer, 'waypoints')) {
+			// TODO: replace hardcoded distance with distance computed through portals
+			creepQuantity = this.lifetimeFilter(this._creeps[setup.role] || [], opts.prespawn, 500).length;
+		} else {
+			creepQuantity = this.lifetimeFilter(this._creeps[setup.role] || [], opts.prespawn).length;
+		}
+		let spawnQuantity = quantity - creepQuantity;
+		if (opts.ressignIdle && spawnQuantity > 0) {
+			const idleCreeps = _.filter(this.base.getCreepsByRole(setup.role), creep => !getCommander(creep));
+			for (let i = 0; i < Math.min(idleCreeps.length, spawnQuantity); i++) {
+				setCommander(idleCreeps[i], this);
+				spawnQuantity--;
+			}
+		}
+		// A bug in outpostDefenseOverlord caused infinite requests and cost me two botarena rounds before I found it...
+		if (spawnQuantity > MAX_SPAWN_REQUESTS) {
+            //@ts-ignore
+			log.warning(`Too many requests for ${setup.role}s submitted by ${this.print}! (Check for errors.)`);
+		} else {
+			for (let i = 0; i < spawnQuantity; i++) {
+				this.requestCreep(setup, opts);
+			}
+		}
+		this.creepReport(setup.role, creepQuantity, quantity);
+	}
 
     protected creepReport(role: string, currentAmt: number, neededAmt: number){
         this.creepUsageReport[role] = [currentAmt, neededAmt];
@@ -295,21 +328,27 @@ export abstract class Commander {
 }
 
 export function getCommander(creep: Unit | Creep): Commander | null | undefined {
+    //@ts-ignore
     if(creep.memory[_MEM.COMMANDER]){
+        //@ts-ignore
         return global.Cobal.commanders[creep.memory[_MEM.COMMANDER]!] || undefined;
     }
     return undefined;
 }
 
 export function setCommander(creep: Unit | Creep, newCommander: Commander | null) {
+    //@ts-ignore
     const roleName = creep.memory.role;
+    //@ts-ignore
     const ref = creep.memory[_MEM.COMMANDER];
     const oldCommadner: Commander | undefined = ref ? global.Cobal.commanders[ref] : undefined;
     if(ref && global.Cobal.cache.commanders[ref] && global.Cobal.cache.commanders[ref][roleName]){
         _.remove(global.Cobal.cache.commanders[ref][roleName], name => name == creep.name);
     }
     if(newCommander) {
+        //@ts-ignore
         creep.memory[_MEM.BASE] = newCommander.base.name;
+        //@ts-ignore
         creep.memory[_MEM.COMMANDER] = newCommander.ref;
         if(!global.Cobal.cache.commanders[newCommander.ref]){
             global.Cobal.cache.commanders[newCommander.ref] = {};
@@ -319,6 +358,7 @@ export function setCommander(creep: Unit | Creep, newCommander: Commander | null
         }
         global.Cobal.cache.commanders[newCommander.ref][roleName].push(creep.name);
     } else {
+        //@ts-ignore
         creep.memory[_MEM.COMMANDER] = undefined;
     }
     if(oldCommadner) oldCommadner.recalculateCreeps();

@@ -22,7 +22,7 @@ export class CreepSetup {
     role: string;
     bodySetup: BodySetup;
 
-    consturctor(roleName: string, bodySetup = {}) {
+    constructor(roleName: string, bodySetup = {}) {
         this.role = roleName;
         _.defaults(bodySetup,  {
             pattern: [],
@@ -93,8 +93,8 @@ export class CreepSetup {
 		// 							  colony.incubator ? colony.incubator.room.energyCapacityAvailable : 0);
 		let energyCapacity = base.room.energyCapacityAvailable;
 		if (base.spawnGroup) {
-			const colonies = _.compact(_.map(base.spawnGroup.memory.colonies,
-										   name => Cobal.colonies[name])) as Base[];
+			const colonies = _.compact(_.map(base.spawnGroup.memory.bases,
+										   name => global.Cobal.bases[name as string])) as Base[];
 			energyCapacity = _.max(_.map(colonies, colony => colony.room.energyCapacityAvailable));
 		}
 		const body = this.generateBody(energyCapacity);

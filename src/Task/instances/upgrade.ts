@@ -14,7 +14,7 @@ export class TaskUpgrade extends Task {
 	}
 
 	isValidTask() {
-		return (this.creep.store(RESOURCE_ENERGY) > 0);
+		return (this.creep.store.getUsedCapacity() > 0);
 	}
 
 	isValidTarget() {

@@ -159,6 +159,10 @@ export function minBy<T>(objects: T[], iteratee: ((obj: T) => number | false)): 
 	return minObj;
 }
 
+export function minMax(value: number, min: number, max: number): number {
+	return Math.max(Math.min(value, max), min);
+}
+
 /**
  * Equivalent to lodash.maxBy() method
  */

@@ -1,5 +1,30 @@
 import {Task} from './Task';
 import { log } from 'console';
+import { attackTaskName, TaskAttack, attackTargetType } from './instances/attack';
+import { buildTaskName, TaskBuild, buildTargetType } from './instances/build';
+import { claimTaskName, TaskClaim, claimTargetType } from './instances/claim';
+import { dismantleTaskName, TaskDismantle, dismantleTargetType } from './instances/dismantle';
+import { dropTaskName, TaskDrop, dropTargetType } from './instances/drop';
+import { fortifyTaskName, TaskFortify, fortifyTargetType } from './instances/fortify';
+import { getBoostedTaskName, TaskGetBoosted, getBoostedTargetType } from './instances/getBoosted';
+import { getRenewedTaskName, TaskGetRenewed, getRenewedTargetType } from './instances/getRenew';
+import { goToTaskName } from './instances/goTo';
+import { TaskInvalid } from './instances/invalid';
+import { goToRoomTaskName, TaskGoToRoom, goToRoomTargetType } from './instances/goToRoom';
+import { harvestTaskName, TaskHarvest, harvestTargetType } from './instances/harvest';
+import { healTaskName, TaskHeal, healTargetType } from './instances/heal';
+import { meleeAttackTaskName, TaskMeleeAttack, meleeAttackTargetType } from './instances/meleeAttack';
+import { pickupTaskName, TaskPickup, pickupTargetType } from './instances/pickup';
+import { rangedAttackTaskName, TaskRangedAttack, rangedAttackTargetType } from './instances/rangeAttack';
+import { rechargeTaskName, TaskRecharge } from './instances/recharge';
+import { signControllerTaskName, TaskSignController, signControllerTargetType } from './instances/signController';
+import { transferTaskName, TaskTransfer, transferTargetType } from './instances/transfer';
+import { transferAllTaskName, TaskTransferAll, transferAllTargetType } from './instances/transferAll';
+import { upgradeTaskName, TaskUpgrade, upgradeTargetType } from './instances/upgrade';
+import { withdrawTaskName, TaskWithdraw, withdrawTargetType } from './instances/withdraw';
+import { withdrawAllTaskName, TaskWithdrawAll, withdrawAllTargetType } from './instances/withdrawAll';
+import { TaskRepair, repairTaskName, repairTargetType } from './instances/repair';
+import { TaskReserve, reserveTaskName, reserveTargetType } from './instances/reserver'
 
 /**
  * The task initializer maps serialized prototasks to Task instances
@@ -89,6 +114,7 @@ export function initializeTask(protoTask: ProtoTask): Task {
 			task = new TaskWithdrawAll(target as withdrawAllTargetType);
 			break;
 		default:
+			//@ts-ignore
 			log.error(`Invalid task name: ${taskName}! task.creep: ${protoTask._creep.name}. Deleting from memory!`);
 			task = new TaskInvalid();
 			break;

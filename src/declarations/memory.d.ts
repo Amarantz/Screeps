@@ -13,8 +13,29 @@ interface CreepMemory {
     source?: string;
     target?: string | undefined;
 	debug?: boolean;
+	talkative?: boolean;
 	task?: ProtoTask | undefined | null;
 }
+
+interface FlagMemory {
+	[_MEM.TICK]?: number;
+	[_MEM.EXPIRATION]?: number;
+	[_MEM.COLONY]?: string;
+	suspendUntil?: number;
+	amount?: number;
+	persistent?: boolean;
+	setPosition?: ProtoPos;
+	rotation?: number;
+	parent?: string;
+	maxPathLength?: number;
+	maxLinearRange?: number;
+	keepStorageStructures?: boolean;
+	keepRoads?: boolean;
+	keepContainers?: boolean;
+	waypoints?: string[];
+}
+
+
 interface MoveData {
 	state: any[];
 	path: string;
@@ -29,19 +50,40 @@ interface MoveData {
 }
 
 interface Memory {
-    Cobal: {},
-    forman: any;
-    bases: {[name:string]: any};
-    creeps: {[name:string]: CreepMemory};
-    flags: {[name:string]: FlagMemory};
-    resetBucket?: boolean;
-    haltTick?: number;
-    rooms: {[roomName: string]: RoomMemory};
-    spawns: {[name:string]: SpawnMemory};
-    stats: any;
-    constructionSites: {[id:string]: number};
-    [otherProperty:string]: any;
+    Memory: {};
+	assimilator: any;
+	Cobal: {};
+	general: any;
+	segmenter: any;
+	strategist?: any;
+	bases: { [name: string]: any };
+	creeps: { [name: string]: CreepMemory; };
+	flags: { [name: string]: FlagMemory; };
+	rooms: { [name: string]: RoomMemory; };
+	spawns: { [name: string]: SpawnMemory; };
+	pathing: PathingMemory;
+	settings: {
+		signature: string;
+		operationMode: operationMode;
+		log: LoggerMemory;
+		enableVisuals: boolean;
+	};
+	profiler?: any;
+	stats: any;
+	constructionSites: { [id: string]: number };
+	// suspend?: number;
+	resetBucket?: boolean;
+	haltTick?: number;
+	combatPlanner: any;
+	reinforcementLearning?: {
+		enabled?: boolean;
+		verbosity?: number;
+		workerIndex?: number;
+	};
+
+	[otherProperty: string]: any;
 }
+
 
 interface LoggerMemory {
 	level: number;
