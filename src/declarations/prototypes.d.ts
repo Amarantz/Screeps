@@ -122,7 +122,7 @@ interface RoomPosition {
     isWalkable(ignoreCreeps?: boolean):boolean;
     availableNeighbors(ignoreCreeps?: boolean): RoomPosition[];
     getPositionAtDirection(direction: DirectionConstant, range?: number): RoomPosition;
-    getMultiRoomRangeTo(pos: RoomPosition):number;
+	getMultiRoomRangeTo(pos: RoomPosition):number;
     findClosestByLimitedRange<T>(objects: T[] | RoomPosition[], rangeLimit: number,
         opts?: {filter: any | string; }): T | undefined;
     findClosestByMultiRoomRange<T extends _HasRoomPosition>(objects: T[]): T | undefined;

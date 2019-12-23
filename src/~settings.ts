@@ -16,3 +16,5 @@ export const MAX_OWNED_ROOMS = Infinity;
  * The global Overmind object will be re-instantiated after this many ticks. In the meantime, refresh() is used.
  */
 export const NEW_COBAL_INTERVAL = onPublicsServer() ? 20 : 5;
+
+export const USE_TRY_CATCH = true;

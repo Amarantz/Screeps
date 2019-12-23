@@ -10,6 +10,12 @@ import { Oblisk } from "componets/Oblisk";
 import { RoomPlanner } from "roomPlanner/roomPlanner";
 import { DefaultCommander } from "commander/core/default";
 import { Component } from "componets/_componet";
+import { CommandCenter } from "componets/CommandCenter";
+import { SpawnGroup } from 'logistics/spawnGroup';
+import { LogisticsNetwork } from "logistics/LogisticsNetwork";
+import { UpgradeCenter } from "componets/UpgradeCenter";
+import { DirectiveHarvest } from "directives/resouce/harvest";
+import { DirectiveExtract } from "directives/resouce/extract";
 
 export enum BasesStage {
     MCV = 0,
@@ -102,7 +108,7 @@ export class Base {
 	commandCenter: CommandCenter | undefined;			// Component with logic for non-spawning structures
 	handOfNod: HandOfNod | undefined;						// Component to encapsulate spawner logic
 	spawnGroup: SpawnGroup | undefined;
-	evolutionChamber: EvolutionChamber | undefined; 	// Component for mineral processing
+	evolutionChamber: UpgradeCenter | undefined; 	// Component for mineral processing
 	upgradeSite: UpgradeSite;							// Component to provide upgraders with uninterrupted energy
 	Oblisk: Oblisk;
 	// miningSites: { [sourceID: string]: MiningSite };	// Component with logic for mining and hauling
@@ -152,6 +158,7 @@ export class Base {
 		},
 		maxSourceDistance   : 100
 	};
+    abathur: any;
 
 
     constructor(id: number, roomName:string, outposts: string[]) {
@@ -183,7 +190,7 @@ export class Base {
     registerHiveClusters() {
         this.hiveClusters = [];
         if(this.stage > BasesStage.MCV){
-            this.commandCenter = undefined;
+            this.commandCenter = new CommandCenter(this, this.storage);
         }
 
         if(this.spawns[0]){
@@ -199,7 +206,7 @@ export class Base {
 
     registerUtilities() {
         this.linkNetwork = undefined;
-        this.logisticsnetwork = undefined;
+        this.logisticsNetwork = new LogisticsNetwork(this);
         this.transportRequest = undefined;
         this.roomPlanner = new RoomPlanner(this);
         this.roadLogistics = undefined;

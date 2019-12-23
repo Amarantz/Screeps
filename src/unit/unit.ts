@@ -101,6 +101,8 @@ export default class Unit {
     lifetime: number;
     actionLog: {[otherProperty:string]: any};
     blockMovement: boolean;
+	carryCapacity: number;
+	carry: Store<ResourceConstant, false>;
     notifiyWhenAttacked(notifyWhenAttacked: boolean) {
         throw new Error("Method not implemented.");
     }
@@ -111,7 +113,9 @@ export default class Unit {
         this.store = creep.store;
         this.fatigue = creep.fatigue;
         this.hits = creep.hits;
-        this.hitsMax = creep.hitsMax;
+		this.hitsMax = creep.hitsMax;
+		this.carry = creep.carry;
+		this.carryCapacity = creep.carryCapacity;
         this.id = creep.id;
         this.memory = creep.memory;
         this.name = creep.name;
@@ -136,7 +140,9 @@ export default class Unit {
     refresh(): void {
         const creep = Game.creeps[this.name];
         if(creep) {
-            this.creep = creep;
+			this.creep = creep;
+			this.carryCapacity = creep.carryCapacity;
+			this.carry = creep.carry;
 			this.pos = creep.pos;
 			this.nextPos = creep.pos;
 			this.body = creep.body;

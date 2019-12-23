@@ -58,6 +58,31 @@ interface ICobal {
 	postRun(): void;
 }
 
+interface IGeneral {
+	notifier: INotifier;
+
+	registerDirective(directive: any): void;
+
+	removeDirective(directive: any): void;
+
+	registerCommander(overlord: any): void;
+
+	getCommandersForBase(colony: any): any[];
+
+	isCommanderSuspended(overlord: any): boolean;
+
+	suspendCommanderFor(overlord: any, ticks: number): void;
+
+	suspendCommanderUntil(overlord: any, untilTick: number): void;
+
+	init(): void;
+
+	run(): void;
+
+	getCreepReport(colony: any): string[][];
+
+}
+
 declare let Cobal: ICobal;
 declare let _cache: IGlobalCache;
 
