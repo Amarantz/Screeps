@@ -21,7 +21,7 @@ import {Commander} from './commander/Commander';
 import {CombatPlanner} from './strategy/CombatPlanner';
 import {Cartographer, ROOMTYPE_CONTROLLER, ROOMTYPE_SOURCEKEEPER} from './utils/Cartographer';
 import {derefCoords, hasJustSpawned, minBy, onPublicsServer} from './utils/utils';
-import {MY_USERNAME, USE_TRY_CATCH} from './~settings';
+import {USE_TRY_CATCH} from './~settings';
 
 
 // export const DIRECTIVE_CHECK_FREQUENCY = 2;
