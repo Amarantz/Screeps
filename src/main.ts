@@ -1,19 +1,8 @@
-import './prototypes/Creeps';
-import './prototypes/Miscellaneous';
-import './prototypes/Room';
-import './prototypes/RoomObject';
-import './prototypes/RoomPosition';
-import './prototypes/RoomStructures';
-import './prototypes/RoomVisuals';
-import './prototypes/Structures';
 import Havester from "creeps/roles/havester";
 import Upgrader from "creeps/roles/upgrader";
 import Worker from "creeps/roles/worker";
 import Filler from "creeps/roles/filler";
 import Transporter from "creeps/roles/transport";
-
-import Mem from "memory/memory";
-import Cobal from "./Cobal";
 
 const maxHavesters = 2;
 const maxUpgraders = 4;
@@ -94,33 +83,11 @@ const main = () => {
     }
 };
 
-const cobal_loop = () => {
-    Mem.load();
-    if(!Mem.shouldRun()) return;
-    Mem.clean();
-
-    if(!global.Cobal || global.Cobal.shouldRebuild || Game.time >= global.Cobal.expiration){
-        delete global.Cobal;
-        Mem.garbageCollect(true);
-        global.Cobal = new Cobal();
-        global.Cobal.build();
-    } else {
-        global.Cobal.refresh();
-    }
-
-    global.Cobal.init();
-    global.Cobal.run();
-    global.Cobal.postRun();
-}
-
 export const loop = () => {
-    cobal_loop();
     main();
 }
 
 function onGobalReset() {
-    Mem.format();
-    global.Cobal = new Cobal();
 }
 
 onGobalReset();
