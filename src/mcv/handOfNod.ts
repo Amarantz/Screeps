@@ -4,6 +4,7 @@ import Commander from "commander/Commander";
 import MCV from "./mcv";
 import Base from "Base";
 import Mem from "memory/memory";
+import { EnergyStructure } from "declarations/typeGuards";
 
 const ERR_ROOM_ENERGY_CAPACITY_NOT_ENOUGH = -20;
 const ERR_SPECIFIED_SPAWN_BUSY = -21;
@@ -51,6 +52,7 @@ export default class HandOfNod extends MCV {
     batteries: StructureContainer[];
     towers: StructureTower[];
     link: StructureLink | undefined;
+    energyStructures: EnergyStructure[];
 
     commander: any;
     settings: {
