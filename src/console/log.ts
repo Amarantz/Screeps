@@ -1,4 +1,4 @@
-import {color} from '../utils/utils';
+import { color } from '../utils/utils';
 export enum LogLevel {
     ERROR = 0,
     WARNING = 1,
