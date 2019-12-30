@@ -95,7 +95,7 @@ export const loop = () => {
     Mem.load();
     if(!Mem.shouldRun()) return;
     Mem.clean();
-    main();
+    // main();
 
     cobal_loop();
     Stats.run()

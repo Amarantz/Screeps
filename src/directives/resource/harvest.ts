@@ -53,7 +53,7 @@ export default class DirectiveHavest extends Directive {
         }
         return this.memory[_HAVEST_MEM_PATH]![_MEM.DISTANCE];
     }
-    spawnMoarOverlords(): void {
+    spawnMoarCommanders(): void {
         let priority = CommanderPriority.ownedRoom.mine;
         if(!(this.room && this.room.my)){
             priority = Cartographer.roomType(this.pos.roomName) == ROOMTYPE_SOURCEKEEPER ? CommanderPriority.remoteSKRoom.mine : CommanderPriority.remoteRoom.mine;
@@ -61,7 +61,7 @@ export default class DirectiveHavest extends Directive {
         this.commanders.mine = new MiningCommander(this, priority);
     }
     init(): void {
-        throw new Error("Method not implemented.");
+
     }
     run(): void {
         this.computeStats()

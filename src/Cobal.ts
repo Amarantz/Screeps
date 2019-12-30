@@ -5,8 +5,9 @@ import Base from "Base";
 import Unit from "unit/Unit";
 import Directive from "directives/Directive";
 import { timingSafeEqual } from "crypto";
+import { DirectiveWrapper } from "directives/initializer";
 
-export const NEW_COBAL_INTERVAL = onPublicServer() ? 20 : 5;
+export const NEW_COBAL_INTERVAL = onPublicServer() ? 20 : 10;
 
 export default class Cobal implements ICobal{
     shouldBuild: boolean;    expiration: number;
@@ -28,6 +29,7 @@ export default class Cobal implements ICobal{
         this.general = new General();
         this.units = {};
         this.bases = {};
+        this.directives = {};
         this.commanders = {};
         this.spawnGroups = {};
         this.baseMap = {};
@@ -38,6 +40,7 @@ export default class Cobal implements ICobal{
         this.cache.build();
         this.registerBases();
         this.wrapCreeps();
+        this.registerDirectives();
     }
 
     private registerBases(){
@@ -52,10 +55,18 @@ export default class Cobal implements ICobal{
         let id = 0;
         for(const baseName in baseOutpost){
             this.bases[baseName] = new Base(id, baseName, baseOutpost[baseName]);
+            this.bases[baseName].spawnMoreCommanders();
             id++;
         }
     }
-    
+
+    private registerDirectives(){
+        for(const flag in Game.flags){
+            const directive = DirectiveWrapper(Game.flags[flag]);
+            directive && directive.spawnMoarCommanders();
+        }
+    }
+
     private wrapCreeps(): void{
         this.units = {};
         for(const name in Game.creeps){
@@ -65,10 +76,12 @@ export default class Cobal implements ICobal{
 
     init(): void {
         this.general.init();
+        _.forEach(this.bases, base => base.init());
 
     }
     run(): void {
         this.general.run();
+        _.forEach(this.bases, base => base.run());
 
     }
     refresh(): void {

@@ -69,7 +69,7 @@ export default abstract class Directive {
         this.base = base;
         this.base.flags = [...this.base.flags, flag];
         this.commanders = {};
-        global[this.name] = this;
+		global[this.name] = this;
         Cobal.general.registerDirective(this);
         Cobal.directives[this.name] = this;
     }
@@ -342,7 +342,7 @@ export default abstract class Directive {
 		return _.compact(_.map(flags, flag => Cobal.directives[flag.name]));
 	}
 
-	abstract spawnMoarOverlords(): void;
+	abstract spawnMoarCommanders(): void;
 
 	/* Initialization logic goes here, called in overseer.init() */
 	abstract init(): void;

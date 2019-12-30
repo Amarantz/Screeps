@@ -12,6 +12,7 @@ interface CreepMemory {
     source?: string;
     target?: string;
     task?: ProtoTask;
+    data?: {origin: string};
     [resource:name]: any;
 }
 

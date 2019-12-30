@@ -1,11 +1,14 @@
 import Directive from "directives/Directive";
-import { onPublicServer } from "utils/utils";
+import { onPublicServer, hasJustSpawned } from "utils/utils";
 import { Notifier } from "directives/Notifier";
 import Mem from "memory/memory";
 import Commander from "commander/Commander";
 import { USE_TRY_CATCH } from "settings";
 import Base, { BaseStage } from "Base";
 import { Pathing } from "Movement/pathing";
+import { Roles } from "creeps/setups/setups";
+import { bodyCost } from "creeps/setups/CreepSetups";
+import  DirectiveBootstrap  from "directives/situational/bootstrap";
 
 interface GeneralMemory {
     suspsendUntil: {[commanderRef: string]: number;};
@@ -50,7 +53,7 @@ export default class General implements IGeneral {
                 } else {
                     e.name = `Caught unhandle exception at ${'' + callback}: \n ${e.name} \n ${e.stack}`;
                 }
-                Cobal.expections = [...Cobal.expections, e]
+                Cobal.expections.push(e)
             }
         } else {
             callback();
@@ -62,7 +65,7 @@ export default class General implements IGeneral {
     }
 
     registerDirective(directive: Directive): void {
-        this.directives = [...this.directives, directive];
+        this.directives.push(directive);
     }
     removeDirective(directive: Directive): void {
         _.remove(this.directives, dir => dir.name == directive.name);
@@ -73,7 +76,10 @@ export default class General implements IGeneral {
 
     registerCommander(commander: Commander): void {
         this.commanders = [...this.commanders, commander];
-        this.commanderByBase = {...this.commanderByBase, [commander.base.name]: [...this.commanderByBase[commander.base.name], commander]}
+        if(!this.commanderByBase[commander.base.name]){
+            this.commanderByBase[commander.base.name] = [];
+        }
+        this.commanderByBase[commander.base.name].push(commander);
     }
 
     getCommanderForBased(base: Base): Commander[] {
@@ -155,7 +161,7 @@ export default class General implements IGeneral {
         }
     }
     placeDirectives(base: Base) {
-
+        this.handleBootstrapping(base);
     }
 
     // SafeMode handling
@@ -192,6 +198,23 @@ export default class General implements IGeneral {
                     }
                 } else {
                     return;
+                }
+            }
+        }
+    }
+
+    private handleBootstrapping(base: Base): void {
+        if(!base.isIncubating){
+            const noQueen = base.getCreepsByRole(Roles.queen).length == 0;
+            if(noQueen && base.handOfNod){
+                const setup = base.handOfNod.commander.queenSetup;
+                const energyToMakeQueen = bodyCost(setup.generateBody(base.room.energyCapacityAvailable));
+                if(base.room.energyAvailable < energyToMakeQueen || hasJustSpawned()){
+                    const result = DirectiveBootstrap.createIfNotPresent(base.handOfNod.pos, 'pos');{
+                        if(typeof result === 'string' || result == OK){
+                            base.handOfNod.settings.suppressSpawning = true;
+                        }
+                    }
                 }
             }
         }

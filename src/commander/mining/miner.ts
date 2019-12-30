@@ -6,6 +6,10 @@ import DirectiveHavest from "directives/resource/harvest";
 import Unit from "unit/Unit";
 import { CommanderPriority } from "priorities/priorities_commanders";
 import { Cartographer, ROOMTYPE_SOURCEKEEPER } from "utils/Cartographer";
+import { log } from "console/log";
+import { maxBy, minBy } from "utils/utils";
+import { Pathing } from "movement/Pathing";
+import $ from "caching/GlobalCache";
 
 export const StandardMinerSetupCost = bodyCost(Setups.drones.miners.standard.generateBody(Infinity));
 export const DoubleMinerSetupCost = bodyCost(Setups.drones.miners.double.generateBody(Infinity));
@@ -15,12 +19,6 @@ const SUICIDE_CHECK_FREQUENCY = 3;
 const MINER_SUICIDE_THRESHOLD = 200;
 
 export default class MiningCommander extends Commander {
-    populateStructures() {
-        throw new Error("Method not implemented.");
-    }
-    calculateContainerPos(): RoomPosition | undefined {
-        throw new Error("Method not implemented.");
-    }
     directive: DirectiveHavest;
     room: Room | undefined;
     source: Source | undefined;
@@ -34,7 +32,7 @@ export default class MiningCommander extends Commander {
     mode: 'early' | 'SK' | 'link' | 'standard' | 'double';
     setup: CreepSetup;
     minersNeeded: number;
-    allowDropMinig: boolean;
+    allowDropMining: boolean;
     static settings = {
         minLinkDistance: 10,
         dropMineUntilRCL: 3,
@@ -71,10 +69,10 @@ export default class MiningCommander extends Commander {
 
         const miningPowerEach = this.setup.getBodyPotential(WORK, this.base);
 		this.minersNeeded = Math.min(Math.ceil(this.miningPowerNeeded / miningPowerEach),
-									 this.pos.availableNeighbors(true).length);
+                                     this.pos.availableNeighbors(true).length);
 		// Allow drop mining at low levels
-		this.allowDropMinig = this.base.level < MiningCommander.settings.dropMineUntilRCL;
-		if (this.mode != 'early' && !this.allowDropMinig) {
+		this.allowDropMining = this.base.level < MiningCommander.settings.dropMineUntilRCL;
+		if (this.mode != 'early' && !this.allowDropMining) {
 			if (this.container) {
 				this.harvestPos = this.container.pos;
 			} else if (this.link) {
@@ -86,9 +84,211 @@ export default class MiningCommander extends Commander {
 		}
     }
     run(): void {
-        throw new Error("Method not implemented.");
+        for (const miner of this.miners){
+            this.handleMiner(miner);
+        }
+        if (this.room && Game.time % BUILD_OUTPUT_FREQUENCY == 1) {
+            this.addRemoveContainer();
+        }
+        if(Game.time % SUICIDE_CHECK_FREQUENCY) {
+            this.suicideOldMiners();
+        }
     }
     init(): void {
-        throw new Error("Method not implemented.");
+        this.wishList(this.minersNeeded, this.setup);
+        this.registerEnergyRequest();
+    }
+
+    private handleMiner(miner: Unit) {
+        // if(miner.flee(miner.room.fleeDefaults, {dropEnergey: true })){
+        //     return;
+        // }
+
+        if(this.mode == 'early' || !this.harvestPos){
+            if(!miner.pos.inRangeToPos(this.pos, 1)){
+                return miner.goTo(this);
+            }
+        }
+
+        switch(this.mode){
+            case 'early':
+                return this.earlyMiningActions(miner);
+            case 'standard':
+                return this.standardMiningAction(miner);
+            case 'double':
+                return this.standardMiningAction(miner);
+            default:
+                log.error(`UNHANDLED MINER STATE FOR ${miner.print} (MODE: ${this.mode})`)
+        }
+    }
+
+    private addRemoveContainer(): void {
+        if(this.allowDropMining) {
+            return;
+        }
+
+        if(!this.container && !this.constructionSite && !this.link){
+            const containerPos = this.calculateContainerPos();
+            const container = containerPos.lookForStructure(STRUCTURE_CONTAINER) as StructureContainer | undefined;
+            if(container) {
+                log.warning(`${this.print}: this.container out of sync at ${containerPos.print}`);
+                this.container = container;
+                return;
+            }
+            log.info(`${this.print}: building container at ${containerPos.print}`);
+            const result = containerPos.createConstructionSite(STRUCTURE_CONTAINER);
+            if(result != OK){
+                log.error(`${this.print}: Cannont build container at ${containerPos.print}`);
+            }
+            return;
+        }
+
+        if(this.container && this.link) {
+            if(this.base.handOfNod && this.container.pos.getRangeTo(this.base.handOfNod) > 2
+            ) {
+                this.container.destroy()
+            }
+        }
+    }
+    private suicideOldMiners(): boolean {
+        if(this.miners.length > this.minersNeeded && this.source){
+            const targetPos = this.harvestPos || this.source.pos;
+            const minersNearSource = _.filter(this.miners, miner => miner.pos.getRangeTo(targetPos) <= SUICIDE_CHECK_FREQUENCY);
+            if (minersNearSource.length > this.minersNeeded){
+                const oldestMiner = minBy(minersNearSource, miner => miner.ticksToLive || 9999);
+                if(oldestMiner && (oldestMiner.ticksToLive || 9999) < MINER_SUICIDE_THRESHOLD) {
+                    oldestMiner.suicide();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private standardMiningAction(miner: Unit) {
+        if(this.goToMiningSite(miner)) return;
+        if(this.container) {
+            if(this.container.hits < this.container.hitsMax
+            && miner.store.energy >= Math.min(miner.store.getCapacity(), REPAIR_POWER * miner.getActiveBodyparts(WORK))){
+                    return miner.repair(this.container);
+            } else {
+                    return miner.harvest(this.source!);
+            }
+        }
+
+        if(this.constructionSite){
+            if(miner.store.getUsedCapacity(RESOURCE_ENERGY) >= Math.min(miner.store.getCapacity(), BUILD_POWER * miner.getActiveBodyparts(WORK))){
+                return miner.build(this.constructionSite);
+            } else {
+                return miner.harvest(this.source!);
+            }
+        }
+
+        if(this.allowDropMining) {
+            miner.harvest(this.source!)
+            if(miner.store.energy > .8 * miner.store.getCapacity()){
+                const drop = maxBy(miner.pos.findInRange(miner.room.droppedEnergy, 1), drop => drop.amount);
+                if(drop) {
+                    miner.goTo(drop);
+                }
+            }
+            if (miner.store.getUsedCapacity() == 0){
+                miner.drop(RESOURCE_ENERGY);
+            }
+            return;
+        }
+
+
+
+    }
+
+    private goToMiningSite(miner: Unit): boolean {
+        if(this.harvestPos){
+            if(!miner.pos.inRangeToPos(this.harvestPos, 0)){
+                miner.goTo(this.harvestPos);
+                return true;
+            }
+        } else {
+            if(!miner.pos.inRangeToPos(this.pos, 1)) {
+                miner.goTo(this);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private registerEnergyRequest(){
+
+    }
+
+    private populateStructures() {
+        if(Game.rooms[this.pos.roomName]){
+            this.source = _.first(this.pos.lookFor(LOOK_SOURCES));
+            this.constructionSite = _.first(this.pos.findInRange(FIND_MY_CONSTRUCTION_SITES, 2));
+            this.container = this.pos.findClosestByLimitedRange(Game.rooms[this.pos.roomName].containers, 1);
+            this.link = this.pos.findClosestByLimitedRange(this.base.availableLinks,2);
+        }
+    }
+    calculateContainerPos(): RoomPosition {
+        let originPos: RoomPosition | undefined;
+        if(this.base.storage){
+            originPos = this.base.storage.pos;
+        } else  {
+            originPos = this.base.spawns[0].pos;
+        }
+        if(originPos){
+            const path = Pathing.findShortestPath(this.pos, originPos).path;
+            const pos = _.find(path, pos => pos.getRangeTo(this) == 1);
+            if(pos) return pos;
+        }
+        return _.first(this.pos.availableNeighbors(true));
+    }
+
+    refresh(){
+        if (!this.room && Game.rooms[this.pos.roomName]){
+            this.populateStructures();
+        }
+
+        super.refresh();
+        $.refresh(this, 'source', 'container', 'link', 'constructionSite');
+    }
+
+    private earlyMiningActions(miner: Unit){
+        if (miner.room != this.room){
+            return miner.goToRoom(this.pos.roomName);
+        }
+
+        if(this.container) {
+            if(this.container.hits < this.container.hitsMax && miner.store.getUsedCapacity(RESOURCE_ENERGY) >= Math.min(miner.store.getCapacity(), REPAIR_POWER * miner.getActiveBodyparts(WORK))){
+                return miner.goRepair(this.container);
+            } else {
+                if(_.sum(miner.store) < miner.store.getCapacity()) {
+                    return miner.goHarvest(this.source!);
+                } else {
+                    return miner.goTransfer(this.container);
+                }
+            }
+        }
+
+        		// Build output site
+		if (this.constructionSite) {
+			if (miner.carry.energy >= Math.min(miner.carryCapacity, BUILD_POWER * miner.getActiveBodyparts(WORK))) {
+				return miner.goBuild(this.constructionSite);
+			} else {
+				return miner.goHarvest(this.source!);
+			}
+		}
+
+		// Drop mining
+		if (this.allowDropMining) {
+			miner.goHarvest(this.source!);
+			if (miner.carry.energy > 0.8 * miner.carryCapacity) { // try to drop on top of largest drop if full
+				const biggestDrop = maxBy(miner.pos.findInRange(miner.room.droppedEnergy, 1), drop => drop.amount);
+				if (biggestDrop) {
+					miner.goDrop(biggestDrop.pos, RESOURCE_ENERGY);
+				}
+			}
+			return;
+		}
     }
 }

@@ -50,7 +50,6 @@ export function isPowerCreep(obj: RoomObject): obj is PowerCreep {
     return (<PowerCreep>obj).powers != undefined;
 }
 
-
 export function isUnit(creep: Creep | Unit): creep is Unit {
 	return (<Unit>creep).creep != undefined;
 }

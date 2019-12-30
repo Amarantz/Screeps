@@ -1,4 +1,4 @@
-import { Base } from '../../Base';
+import Base from '../../Base';
 
 
 export interface BodySetup {
@@ -31,15 +31,16 @@ export class CreepSetup {
             suffix: [],
             proportionalPrefixSuffix: false,
             ordered: true,
-        })
+		});
+		this.bodySetup = bodySetup as BodySetup;
     }
 
  	/* Generate the largest body of a given pattern that is producable from a room,
 	 * subject to limitations from maxRepeats */
 	generateBody(availableEnergy: number): BodyPartConstant[] {
 		let patternCost, patternLength, numRepeats: number;
-		const prefix = this.bodySetup.prefix;
-		const suffix = this.bodySetup.suffix;
+		const prefix = this.bodySetup.prefix || [];
+		const suffix = this.bodySetup.suffix || [];
 		let body: BodyPartConstant[] = [];
 		// calculate repetitions
 		if (this.bodySetup.proportionalPrefixSuffix) { // if prefix and suffix are to be kept proportional to body size
@@ -92,11 +93,11 @@ export class CreepSetup {
 		// let energyCapacity = Math.max(colony.room.energyCapacityAvailable,
 		// 							  colony.incubator ? colony.incubator.room.energyCapacityAvailable : 0);
 		let energyCapacity = base.room.energyCapacityAvailable;
-		if (base.spawnGroup) {
-			const colonies = _.compact(_.map(base.spawnGroup.memory.bases,
-										   name => global.Cobal.bases[name as string])) as Base[];
-			energyCapacity = _.max(_.map(colonies, colony => colony.room.energyCapacityAvailable));
-		}
+		// if (base.spawnGroup) {
+		// 	const colonies = _.compact(_.map(base.spawnGroup.memory.bases,
+		// 								   name => global.Cobal.bases[name as string])) as Base[];
+		// 	energyCapacity = _.max(_.map(colonies, colony => colony.room.energyCapacityAvailable));
+		// }
 		const body = this.generateBody(energyCapacity);
 		return _.filter(body, (part: BodyPartConstant) => part == partType).length;
 	}

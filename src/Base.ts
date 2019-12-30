@@ -7,6 +7,11 @@ import Stats from "./stats/stats";
 import { StoreStructure } from "declarations/typeGuards";
 import { mergeSum } from "utils/utils";
 import { log } from "console/log";
+import MCV from "mcv/mcv";
+import UpgradeSite from "mcv/upgradeSite";
+import { TransportRequestGroup } from "logistics/TransportRequestGroup";
+import DefaultCommander from "commander/core/default";
+import WorkerCommander from "commander/core/workers";
 
 export enum BaseStage {
 	MCV = 0,		// No storage and no incubator
@@ -77,7 +82,7 @@ export default class Base {
     pos: RoomPosition;
     stage: BaseStage;
     terminal: any;
-    MCVbuildings: any;
+    MCVbuildings: MCV[];
     links: StructureLink[];
     towers: StructureTower[];
     handOfNod: HandOfNod;
@@ -90,6 +95,12 @@ export default class Base {
     termianl: StructureTerminal | undefined;
     level: number;
     assets: { [resourceType: string]: number; };
+    upgradeSite: UpgradeSite;
+    transportRequests: TransportRequestGroup;
+    commanders: {
+        default: DefaultCommander;
+        worker: WorkerCommander;
+    };
 
     constructor(id:number, roomName:string, outposts: string[]){
         this.id = id;
@@ -115,6 +126,8 @@ export default class Base {
         this.creeps = global.Cobal.cache.creepsByBase[this.name] || [];
         this.creepsByRole = _.groupBy(this.creeps, creep => creep.memory.role);
         this.registerRoomObjects_cached();
+        this.registerOperationalState();
+        this.registerUtilities();
         this.registerMCVComponets();
     }
 
@@ -132,6 +145,14 @@ export default class Base {
 		this.repairables = _.flatten(_.map(this.rooms, room => room.repairables));
         this.rechargeables = _.flatten(_.map(this.rooms, room => room.rechargeables));
         this.assets = this.getAllAssets();
+    }
+
+    private registerUtilities() {
+        this.transportRequests = new TransportRequestGroup();
+    }
+
+    private refreshUtilities(){
+        this.transportRequests.refresh();
     }
 
     private registerRoomObjects_cached(): void {
@@ -216,9 +237,11 @@ export default class Base {
     }
 
     private registerMCVComponets() {
+        this.MCVbuildings = [];
         if(this.spawns[0]){
             this.handOfNod = new HandOfNod(this, this.spawns[0]);
         }
+        this.upgradeSite = new UpgradeSite(this, this.controller);
         this.MCVbuildings.reverse();
     }
 
@@ -251,6 +274,10 @@ export default class Base {
     }
 
     spawnMoreCommanders(): void {
+        this.commanders = {
+            default: new DefaultCommander(this),
+            worker: new WorkerCommander(this),
+        }
         for(const mcv of this.MCVbuildings){
             mcv.spawnMoreCommanders();
         }
@@ -274,6 +301,7 @@ export default class Base {
         this.creepsByRole = _.groupBy(this.creeps, creep => creep.memory.role);
         this.refreshRoomObjects();
         this.registerOperationalState();
+        this.refreshUtilities();
         this.refreshMCVComponets();
     }
 

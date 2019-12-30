@@ -25,8 +25,8 @@ export class TaskRecharge extends Task {
 	}
 
 	private rechargeRateForCreep(creep: Unit, obj: rechargeObjectType): number | false {
-		if (creep.base && creep.base.handOfNod && creep.base.handOfNod.battery
-			&& obj.id == creep.base.HandOfNod.battery.id && creep.roleName != 'queen') {
+		if (creep.base && creep.base.handOfNod && creep.base.handOfNod.batteries[0]
+			&& obj.id == creep.base.handOfNod.batteries[0].id && creep.roleName != 'queen') {
 			return false; // only queens can use the hatchery battery
 		}
 		let amount = isResource(obj) ? obj.amount : obj.energy;
@@ -87,7 +87,7 @@ export class TaskRecharge extends Task {
 			// if (creep.roleName == 'queen') {
 			log.debug(`No valid withdraw target for ${creep.print}!`);
 			// }
-			creep.task = null;
+			creep.task = undefined;
 		}
 	}
 

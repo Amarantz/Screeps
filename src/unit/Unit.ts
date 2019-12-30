@@ -47,6 +47,10 @@ const RANGES = {
  * direct control of a creep.
  */
 export default class Unit {
+    flee(arg0: any, arg1: any): any {
+        throw new Error("Method not implemented.");
+    }
+	boostCounts: any;
     moveOffCurrentPos() {
         throw new Error("Method not implemented.");
     }
@@ -457,6 +461,13 @@ export default class Unit {
 			return ERR_BUSY;
 		}
 	}
+	attack(target: any): number {
+		return OK
+	}
+
+	rangedAttack(target: any): number {
+		return OK
+	}
 
 	notifyWhenAttacked(enabled: boolean) {
 		return this.creep.notifyWhenAttacked(enabled);
@@ -466,7 +477,13 @@ export default class Unit {
 		const result = this.creep.pickup(resource);
 		if (!this.actionLog.pickup) this.actionLog.pickup = (result == OK);
 		return result;
-    }
+	}
+	heal(target: any): number{
+		return OK
+	}
+	rangedHeal(target: any): number {
+		return OK
+	}
 
     attackController(controller: StructureController) {
 		const result = this.creep.attackController(controller);

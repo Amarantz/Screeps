@@ -63,6 +63,7 @@ export default abstract class Commander {
         this.pos = initializer.pos;
         this.base = hasBase(initializer) ? initializer.base : initializer;
         this._units = {};
+        this._creeps = {};
         this.recalculateCreeps();
         this.creepUsageReport = _.mapValues(this._creeps, creep => undefined);
         Cobal.commanders[this.ref] = this;
@@ -80,7 +81,7 @@ export default abstract class Commander {
         return Cobal.general.suspendCommanderUntil(this, untilTicks);
     }
     refresh(): void {
-        this.room = Game.rooms[this.pos.room];
+        this.room = Game.rooms[this.pos.roomName];
         this.recalculateCreeps();
         for(const role in this._creeps){
             for(const creep of this._creeps[role]){
@@ -97,7 +98,7 @@ export default abstract class Commander {
         return `<a href="#!/room/${Game.shard.name}/${this.pos.roomName}">[${this.ref}]</a>`;
     }
     recalculateCreeps(): void {
-       this._creeps = _.mapValues(Cobal.cache.commanders[this.ref], creepsOfRole => _.map(creepsOfRole, creepName => Game.creeps[creepName]));
+       this._creeps = _.mapValues(Cobal.cache.commanders[this.ref], creepsOfRole => _.map(creepsOfRole, creepName => Game.creeps[creepName.name]));
        for(const role in this._units){
             this.synchronizeUnits(role);
        }
@@ -112,8 +113,8 @@ export default abstract class Commander {
     }
 
     private synchronizeUnits(role:string, notifyWhenAttacked?: boolean): void {
-        const unitNames = _.zipObject(_.map(this._units[role] || [], unit => [unit.name, true])) as {[name: string]: boolean;};
-        const creepNames = _.zipObject(_.map(this._creeps[role] || [], creep => [creep.name, true])) as {[name: string]: boolean;};
+        const unitNames = _.zipObject(_.map((this._units[role] || []), unit => [unit.name, true])) as {[name: string]: boolean;};
+        const creepNames = _.zipObject(_.map((this._creeps[role] || []), creep => [creep.name, true])) as {[name: string]: boolean;};
         for(const creep of this._creeps[role] || []){
             if(!unitNames[creep.name]){
                 this._units[role].push(Cobal.units[creep.name] || new Unit(creep, notifyWhenAttacked));
@@ -146,7 +147,7 @@ export default abstract class Commander {
         } else {
             creepQuantity = this.lifetimeFilter(this._creeps[setup.role] || [], opts.prespawn).length;
         }
-        let spawnQuantity = quantity = creepQuantity;
+        let spawnQuantity = quantity - creepQuantity;
         if(opts.reassignIdle && spawnQuantity > 0){
             const idleCreeps = _.filter(this.base.getCreepsByRole(setup.role),creep => !getCommander(creep));
             for(let i = 0; i < Math.min(idleCreeps.length, spawnQuantity); i++) {
