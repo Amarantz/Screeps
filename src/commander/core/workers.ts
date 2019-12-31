@@ -10,7 +10,7 @@ import { Task } from "../../tasks/Task";
 import { minBy } from "../../utils/utils";
 import { FortifyPriorities, BuildPriorities } from "../../priorities/priorities_structures";
 import { boostResources } from "../../resources/map_resources";
-import { TERMINAL_STATE_REBUILD } from "directives/terminalState/DirectiveTerminalRebuil";
+import { TERMINAL_STATE_REBUILD } from "../../directives/terminalState/TerminalRebuil";
 
 export default class WorkerCommander extends Commander {
 

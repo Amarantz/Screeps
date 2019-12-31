@@ -47,7 +47,7 @@ export default class Cobal implements ICobal{
             this.registerBases();
             this.wrapCreeps();
             this.registerDirectives();
-            // this.registerTermainals();
+            this.registerTermainals();
     }
 
     private registerBases(){
@@ -84,9 +84,10 @@ export default class Cobal implements ICobal{
     private registerTermainals(){
         let terminals: StructureTerminal[] = [];
         for(const base in this.bases){
-            terminals.push(this.bases[base].terminal);
+            if(this.bases[base].terminal!){
+                terminals.push(this.bases[base].terminal!);
+            }
         }
-
         this.terminalNetwork = new TerminalNetwork(terminals);
     }
 
@@ -96,11 +97,13 @@ export default class Cobal implements ICobal{
                 base.init()
             });
     }
+    
     run(): void {
             this.general.run();
             _.forEach(this.bases, base => base.run());
 
     }
+
     refresh(): void {
         this.cache.refresh();
         this.general.refresh();
@@ -108,7 +111,10 @@ export default class Cobal implements ICobal{
             this.units[name].refresh();
         }
         for(const base in this.baseMap){
-            this.bases[base].refresh()
+            this.bases[base].refresh();
+        }
+        for(const commander in this.commanders){
+            this.commanders[commander].refresh();
         }
     }
 

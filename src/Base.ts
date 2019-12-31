@@ -98,7 +98,7 @@ export default class Base {
     rechargeables: rechargeObjectType[];
     pos: RoomPosition;
     stage: BaseStage;
-    terminal: any;
+    terminal: StructureTerminal | undefined;
     MCVbuildings: MCV[];
     links: StructureLink[];
     towers: StructureTower[];
@@ -149,7 +149,7 @@ export default class Base {
         maxSourceDistance: 100
     }
     bunker: BunkerData | undefined;
-    layout: string;
+    layout: 'twoPart' | 'bunker';
 
     constructor(id:number, roomName:string, outposts: string[]){
         this.id = id;
