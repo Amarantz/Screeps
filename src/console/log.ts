@@ -1,16 +1,36 @@
-import { color } from '../utils/utils';
-export enum LogLevel {
-    ERROR = 0,
-    WARNING = 1,
-    ALERT = 2,
-    INFO = 3,
-    DEBUG = 4,
+import {color} from '../utils/utils';
+
+export enum LogLevels {
+	ERROR,		// log.level = 0
+	WARNING,	// log.level = 1
+	ALERT,		// log.level = 2
+	INFO,		// log.level = 3
+	DEBUG		// log.level = 4
 }
 
-export const LOG_LEVEL: number = LogLevel.INFO;
+/**
+ * Default debug level for log output
+ */
+export const LOG_LEVEL: number = LogLevels.INFO;
+
+/**
+ * Prepend log output with current tick number.
+ */
 export const LOG_PRINT_TICK: boolean = true;
+
+/**
+ * Prepend log output with source line.
+ */
 export const LOG_PRINT_LINES: boolean = false;
+
+/**
+ * Load source maps and resolve source lines back to typeascript.
+ */
 export const LOG_LOAD_SOURCE_MAP: boolean = false;
+
+/**
+ * Maximum padding for source links (for aligning log output).
+ */
 export const LOG_MAX_PAD: number = 100;
 
 /**
@@ -26,7 +46,6 @@ export const LOG_VSC = {repo: '@@_repo_@@', revision: '@@_revision_@@', valid: f
 export const LOG_VSC_URL_TEMPLATE = (path: string, line: string) => {
 	return `${LOG_VSC.repo}/blob/${LOG_VSC.revision}/${path}#${line}`;
 };
-
 
 // <caller> (<source>:<line>:<column>)
 const stackLineRe = /([^ ]*) \(([^:]*):([0-9]*):([0-9]*)\)/;
@@ -88,15 +107,17 @@ function time(): string {
 	return color(Game.time.toString(), 'gray');
 }
 
-export function debug(this: any, thing: { name: string, memory: any, pos: RoomPosition }, ...args: any[]) {
+export function debug(thing: { name: string, memory: any, pos: RoomPosition }, ...args: any[]) {
 	if (thing.memory && thing.memory.debug) {
 		this.debug(`${thing.name} @ ${thing.pos.print}: `, args);
 	}
 }
 
+/**
+ * Log provides methods for displaying pretty-printed text into the Screeps console
+ */
 export class Log {
-    static sourceMap: any;
-
+	static sourceMap: any;
 
 	static loadSourceMap() {
 		// try {
@@ -108,43 +129,55 @@ export class Log {
 		// } catch (err) {
 		console.log('Source mapping deprecated.');
 		// }
-    }
+	}
+
+	get level(): number {
+		return Memory.settings.log.level;
+	}
 
 	setLogLevel(value: number) {
 		let changeValue = true;
 		switch (value) {
-			case LogLevel.ERROR:
+			case LogLevels.ERROR:
 				console.log(`Logging level set to ${value}. Displaying: ERROR.`);
 				break;
-			case LogLevel.WARNING:
+			case LogLevels.WARNING:
 				console.log(`Logging level set to ${value}. Displaying: ERROR, WARNING.`);
 				break;
-			case LogLevel.ALERT:
+			case LogLevels.ALERT:
 				console.log(`Logging level set to ${value}. Displaying: ERROR, WARNING, ALERT.`);
 				break;
-			case LogLevel.INFO:
+			case LogLevels.INFO:
 				console.log(`Logging level set to ${value}. Displaying: ERROR, WARNING, ALERT, INFO.`);
 				break;
-			case LogLevel.DEBUG:
+			case LogLevels.DEBUG:
 				console.log(`Logging level set to ${value}. Displaying: ERROR, WARNING, ALERT, INFO, DEBUG.`);
 				break;
 			default:
 				console.log(`Invalid input: ${value}. Loging level can be set to integers between `
-							+ LogLevel.ERROR + ' and ' + LogLevel.DEBUG + ', inclusive.');
+							+ LogLevels.ERROR + ' and ' + LogLevels.DEBUG + ', inclusive.');
 				changeValue = false;
 				break;
+		}
+		if (changeValue) {
+			Memory.settings.log.level = value;
 		}
 	}
 
 	get showSource(): boolean {
-		return true;
+		return Memory.settings.log.showSource;
+	}
+
+	set showSource(value: boolean) {
+		Memory.settings.log.showSource = value;
 	}
 
 	get showTick(): boolean {
-		return true;
+		return Memory.settings.log.showTick;
 	}
 
 	set showTick(value: boolean) {
+		Memory.settings.log.showTick = value;
 	}
 
 	private _maxFileString: number = 0;
@@ -162,8 +195,7 @@ export class Log {
 	}
 
 	trace(error: Error): Log {
-        //@ts-ignore
-		if (this.level >= LogLevel.ERROR && error.stack) {
+		if (this.level >= LogLevels.ERROR && error.stack) {
 			console.log(this.resolveStack(error.stack));
 		}
 
@@ -171,33 +203,26 @@ export class Log {
 	}
 
 	throw(e: Error) {
-        //@ts-ignore
 		console.log.apply(this, this.buildArguments(FATAL).concat([color(e.toString(), fatalColor)]));
 	}
 
 	error(...args: any[]): undefined {
-        //@ts-ignore
-		if (this.level >= LogLevel.ERROR) {
-            //@ts-ignore
-			console.log.apply(this, this.buildArguments(LogLevel.ERROR).concat([].slice.call(args)));
+		if (this.level >= LogLevels.ERROR) {
+			console.log.apply(this, this.buildArguments(LogLevels.ERROR).concat([].slice.call(args)));
 		}
 		return undefined;
 	}
 
 	warning(...args: any[]): undefined {
-        //@ts-ignore
-		if (this.level >= LogLevel.WARNING) {
-            //@ts-ignore
-			console.log.apply(this, this.buildArguments(LogLevel.WARNING).concat([].slice.call(args)));
+		if (this.level >= LogLevels.WARNING) {
+			console.log.apply(this, this.buildArguments(LogLevels.WARNING).concat([].slice.call(args)));
 		}
 		return undefined;
 	}
 
 	alert(...args: any[]): undefined {
-        //@ts-ignore
-		if (this.level >= LogLevel.ALERT) {
-            //@ts-ignore
-			console.log.apply(this, this.buildArguments(LogLevel.ALERT).concat([].slice.call(args)));
+		if (this.level >= LogLevels.ALERT) {
+			console.log.apply(this, this.buildArguments(LogLevels.ALERT).concat([].slice.call(args)));
 		}
 		return undefined;
 	}
@@ -209,19 +234,15 @@ export class Log {
 	}
 
 	info(...args: any[]): undefined {
-        //@ts-ignore
-		if (this.level >= LogLevel.INFO) {
-            //@ts-ignore
-			console.log.apply(this, this.buildArguments(LogLevel.INFO).concat([].slice.call(args)));
+		if (this.level >= LogLevels.INFO) {
+			console.log.apply(this, this.buildArguments(LogLevels.INFO).concat([].slice.call(args)));
 		}
 		return undefined;
 	}
 
 	debug(...args: any[]) {
-        //@ts-ignore
-		if (this.level >= LogLevel.DEBUG) {
-            //@ts-ignore
-			console.log.apply(this, this.buildArguments(LogLevel.DEBUG).concat([].slice.call(args)));
+		if (this.level >= LogLevels.DEBUG) {
+			console.log.apply(this, this.buildArguments(LogLevels.DEBUG).concat([].slice.call(args)));
 		}
 	}
 
@@ -231,9 +252,8 @@ export class Log {
 		}
 	}
 
-    printObject(obj: any) {
-        //@ts-ignore
-		console.log.apply(this, this.buildArguments(LogLevel.DEBUG).concat(JSON.stringify(obj)));
+	printObject(obj: any) {
+		console.log.apply(this, this.buildArguments(LogLevels.DEBUG).concat(JSON.stringify(obj)));
 	}
 
 	getFileLine(upStack = 4): string {
@@ -257,19 +277,19 @@ export class Log {
 	private buildArguments(level: number): string[] {
 		const out: string[] = [];
 		switch (level) {
-			case LogLevel.ERROR:
+			case LogLevels.ERROR:
 				out.push(color('ERROR  ', 'red'));
 				break;
-			case LogLevel.WARNING:
+			case LogLevels.WARNING:
 				out.push(color('WARNING', 'orange'));
 				break;
-			case LogLevel.ALERT:
+			case LogLevels.ALERT:
 				out.push(color('ALERT  ', 'yellow'));
 				break;
-			case LogLevel.INFO:
+			case LogLevels.INFO:
 				out.push(color('INFO   ', 'green'));
 				break;
-			case LogLevel.DEBUG:
+			case LogLevels.DEBUG:
 				out.push(color('DEBUG  ', 'gray'));
 				break;
 			case FATAL:
@@ -281,7 +301,7 @@ export class Log {
 		if (this.showTick) {
 			out.push(time());
 		}
-		if (this.showSource && level <= LogLevel.ERROR) {
+		if (this.showSource && level <= LogLevels.ERROR) {
 			out.push(this.getFileLine());
 		}
 		return out;
@@ -308,3 +328,4 @@ if (LOG_LOAD_SOURCE_MAP) {
 }
 
 export const log = new Log();
+

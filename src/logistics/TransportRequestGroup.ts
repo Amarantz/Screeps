@@ -1,6 +1,7 @@
-import { EnergyStructure, StoreStructure, isStoreStructure, isEnergyStructure } from "declarations/typeGuards";
-import { log } from "console/log";
-import { blankPriorityQueue, Priority } from "priorities/priorities";
+
+import {log} from '../console/log';
+import {EnergyStructure, isEnergyStructure, isStoreStructure, StoreStructure} from '../declarations/typeGuards';
+import {blankPriorityQueue, Priority} from '../priorities/priorities';
 
 export type TransportRequestTarget =
 	EnergyStructure
@@ -21,6 +22,10 @@ interface TransportRequestOptions {
 }
 
 
+/**
+ * Transport request groups handle close-range prioritized resource requests, in contrast to the logistics network,
+ * which handles longer-ranged requests
+ */
 export class TransportRequestGroup {
 
 	supply: { [priority: number]: TransportRequest[] };

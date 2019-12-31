@@ -1,5 +1,6 @@
 import {log} from '../console/log';
 import {printRoomName} from '../utils/utils';
+import { Visualizer } from '../Visualizer';
 
 export enum NotifierPriority {
 	Critical = 0,
@@ -73,5 +74,10 @@ export class Notifier {
 				return alert.message;
 			}
 		});
-    }
+	}
+
+	visuals(): void {
+		const notificationMessages = this.generateNotificationsList();
+		Visualizer.drawNotifications(notificationMessages);
+	}
 }

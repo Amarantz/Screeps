@@ -4,7 +4,9 @@ import './prototypes/Room';
 import './prototypes/RoomObject';
 import './prototypes/RoomPosition';
 import './prototypes/RoomStructures';
+import './prototypes/RoomVisiual';
 import './prototypes/Structures';
+import './console/global';
 
 import Havester from "./creeps/roles/havester";
 import Upgrader from "./creeps/roles/upgrader";
@@ -23,72 +25,6 @@ const maxFillers = 2;
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
 const main = () => {
-    const creepsByRoles = _.groupBy(Game.creeps, (creep) => creep.memory.role);
-    const { havester, upgrader, transporter, filler, builder } = creepsByRoles
-
-    for(const name in Game.creeps){
-        const creep = Game.creeps[name];
-        if(creep.memory.role == 'havester'){
-            Havester.run(creep);
-        }
-        if(creep.memory.role === 'upgrader'){
-            Upgrader.run(creep);
-        }
-        if(creep.memory.role === 'transporter'){
-            Transporter.run(creep);
-        }
-        if(creep.memory.role === 'builder') {
-            Worker.run(creep);
-        }
-        if(creep.memory.role === 'filler') {
-            Filler.run(creep);
-        }
-    }
-    const spawns = _.filter(Game.spawns, spawn => !spawn.spawning);
-
-    if(!havester || havester.length < maxHavesters){
-        let name = 'Havester' + Game.time;
-        const body = [WORK,WORK,MOVE];
-        const bodyCost = _.sum(body.map((part)=> BODYPART_COST[part]));
-        if(spawns[0] && spawns[0].name && Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
-            Game.spawns[spawns[0].name].spawnCreep([WORK,WORK,MOVE], name, {memory: {role: 'havester'}});
-        }
-    }
-
-    if(havester && havester.length && (!upgrader || upgrader.length < maxUpgraders)){
-        let name = 'Upgrader' + Game.time;
-        const body = [WORK,CARRY,CARRY,MOVE,MOVE];
-        const bodyCost = _.sum(body.map((part)=> BODYPART_COST[part]));
-        if(spawns[0] && spawns[0].name && Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
-            Game.spawns[spawns[0].name].spawnCreep(body, name, {memory: {role: 'upgrader'}});
-        }
-    }
-    if(havester && havester.length && (!filler || filler.length < maxFillers)){
-        const name = 'Filler' + Game.time;
-        const body = [CARRY,CARRY,MOVE,MOVE];
-        const bodyCost = _.sum(body.map((part) => BODYPART_COST[part]));
-        if(spawns[0] && spawns[0].name && Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
-            Game.spawns[spawns[0].name].spawnCreep(body, name, {memory: {role: 'filler'}});
-        }
-    }
-    if(havester && havester.length && (!transporter || transporter.length < maxTransporters)) {
-        const name = 'Transporter' + Game.time;
-        const body = [CARRY,CARRY,MOVE,MOVE];
-        const bodyCost = _.sum(body.map((part) => BODYPART_COST[part]));
-        if(spawns[0] && spawns[0].name && Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
-            Game.spawns[spawns[0].name].spawnCreep(body, name, {memory: {role: 'transporter'}});
-        }
-    }
-
-    const constructionsites = spawns[0] && spawns[0].name && Game.spawns[spawns[0].name].room.find(FIND_CONSTRUCTION_SITES) || [];
-    if(havester && havester.length && ((!builder || builder.length < maxBuilders) && constructionsites.length > 0)) {
-        const name = 'Builder' + Game.time;
-        const body = [WORK,CARRY,CARRY,MOVE,MOVE];
-        const bodyCost = _.sum(body.map((part)=> BODYPART_COST[part]));
-        if(spawns[0] && spawns[0].name && Game.spawns[spawns[0].name].energy >= bodyCost && !Game.spawns[spawns[0].name].spawning){
-            Game.spawns[spawns[0].name].spawnCreep(body, name, {memory: {role: 'builder'}});
-        }
-    }
 };
 
 export const loop = () => {
@@ -99,7 +35,7 @@ export const loop = () => {
 
     cobal_loop();
     Stats.run()
-    global.Cobal && global.Cobal.postRun();
+    global.Cobal.postRun();
 }
 
 const cobal_loop = () => {

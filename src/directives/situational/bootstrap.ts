@@ -26,7 +26,9 @@ export default class DirectiveBootstrap extends Directive {
         this.base.bootstraping = true;
         this.needsMiners = (this.base.getCreepsByRole(Roles.drone).length == 0);
         this.needsQueens = (this.base.getCreepsByRole(Roles.queen).length == 0);
-        this.needsManager = false;
+        this.needsManager = (this.base.commandCenter != undefined &&
+            this.base.commandCenter.overlord != undefined &&
+            this.base.getCreepsByRole(Roles.manager).length == 0);
     }
 
     spawnMoarCommanders(): void {

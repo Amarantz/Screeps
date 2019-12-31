@@ -5,13 +5,24 @@ import DirectiveHavest, { _HAVEST_MEM_DOWNTIME, _HAVEST_MEM_USAGE } from "direct
 import HandOfNod from "mcv/handOfNod";
 import Stats from "./stats/stats";
 import { StoreStructure } from "declarations/typeGuards";
-import { mergeSum } from "utils/utils";
+import { mergeSum, maxBy, minBy } from "utils/utils";
 import { log } from "console/log";
 import MCV from "mcv/mcv";
 import UpgradeSite from "mcv/upgradeSite";
 import { TransportRequestGroup } from "logistics/TransportRequestGroup";
 import DefaultCommander from "commander/core/default";
 import WorkerCommander from "commander/core/workers";
+import { LogisticsNetwork } from "logistics/LogisticsNetwork";
+import TransportCommander  from "commander/core/transport";
+import { Energetics } from "logistics/Energetics";
+import { LinkNetwork } from "logistics/LinkNetwork";
+import { RoadLogistics } from "logistics/RoadLogistics";
+import EvolutionChamber from "./mcv/evolutionChamber";
+import { RoomPlanner } from "./roomPlanner/roomPlanner";
+import { bunkerLayout, getPosFromBunkerCoord } from "./roomPlanner/layouts.ts/bunker";
+import Commando from "./resources/commando";
+import { Visualizer } from "./Visualizer";
+import Oblisk from "mcv/oblisk";
 
 export enum BaseStage {
 	MCV = 0,		// No storage and no incubator
@@ -53,6 +64,13 @@ export const getAllBases = (): Base[] => (
     _.values(Cobal.bases)
 )
 
+export interface BunkerData {
+	anchor: RoomPosition;
+	topSpawn: StructureSpawn | undefined;
+	coreSpawn: StructureSpawn | undefined;
+	rightSpawn: StructureSpawn | undefined;
+}
+
 export default class Base {
     availableLinks: StructureLink[];
     id: number;
@@ -71,7 +89,6 @@ export default class Base {
     flags: Flag[];
     controller: StructureController;
     spawns: StructureSpawn[];
-    extentions: StructureExtension[];
     storage: StructureStorage | undefined;
     sources: Source[];
     constructionSites: ConstructionSite[];
@@ -85,22 +102,54 @@ export default class Base {
     MCVbuildings: MCV[];
     links: StructureLink[];
     towers: StructureTower[];
+    extractors: StructureExtractor[];
     handOfNod: HandOfNod;
     labs: StructureLab[];
     bootstraping: boolean;
     isIncubating: boolean;
     defcon: number;
-    terminalState: undefined;
     breached: boolean;
     termianl: StructureTerminal | undefined;
-    level: number;
+    level: 1|2|3|4|5|6|7|8;
     assets: { [resourceType: string]: number; };
     upgradeSite: UpgradeSite;
     transportRequests: TransportRequestGroup;
     commanders: {
         default: DefaultCommander;
-        worker: WorkerCommander;
+        work: WorkerCommander;
+        logistics: TransportCommander;
     };
+    lowPowerMode: boolean;
+    logisticsNetwork: LogisticsNetwork;
+    roomPlanner: any;
+	powerSpawn: any;
+    extensions: StructureExtension[];
+    commandCenter: any;
+    linkNetwork: any;
+    evolutionChamber: EvolutionChamber | undefined;
+    spawnGroup: any;
+    nuker: StructureNuker | undefined;
+    observer: StructureObserver | undefined;
+    oblisk: Oblisk;
+    roadLogistics: RoadLogistics;
+    commando: Commando;
+    terminalState: TerminalState | undefined;
+
+    static settings = {
+        remoteSourcesByLevel: {
+            1:1,
+            2: 2,
+			3: 3,
+			4: 4,
+			5: 5,
+			6: 6,
+			7: 7,
+			8: 9,
+        },
+        maxSourceDistance: 100
+    }
+    bunker: BunkerData | undefined;
+    layout: string;
 
     constructor(id:number, roomName:string, outposts: string[]){
         this.id = id;
@@ -136,7 +185,7 @@ export default class Base {
         this.destinations = [];
         this.controller = this.room.controller!;
         this.spawns = _.sortBy(_.filter(this.room.spawns, spawn => spawn.my && spawn.isActive()), spawn => spawn.ref);
-        this.extentions = this.room.extensions;
+        this.extensions = this.room.extensions;
         this.storage = this.room.storage && this.room.storage.isActive() ? this.room.storage : undefined;
         this.sources = _.sortBy(_.flatten(_.map(this.rooms, room => room.sources)));
         this.constructionSites = _.flatten(_.map(this.rooms, room => room.constructionSites));
@@ -148,22 +197,67 @@ export default class Base {
     }
 
     private registerUtilities() {
+        this.linkNetwork = new LinkNetwork(this);
+        this.logisticsNetwork = new LogisticsNetwork(this);
         this.transportRequests = new TransportRequestGroup();
+        this.roomPlanner = new RoomPlanner(this);
+        if (this.roomPlanner.memory.bunkerData && this.roomPlanner.memory.bunkerData.anchor) {
+			this.layout = 'bunker';
+			const anchor = derefRoomPosition(this.roomPlanner.memory.bunkerData.anchor);
+			// log.debug(JSON.stringify(`anchor for ${this.name}: ${anchor}`));
+			const spawnPositions = _.map(bunkerLayout[8]!.buildings.spawn.pos, c => getPosFromBunkerCoord(c, this));
+			// log.debug(JSON.stringify(`spawnPositions for ${this.name}: ${spawnPositions}`));
+			const rightSpawnPos = maxBy(spawnPositions, pos => pos.x) as RoomPosition;
+			const topSpawnPos = minBy(spawnPositions, pos => pos.y) as RoomPosition;
+			const coreSpawnPos = anchor.findClosestByRange(spawnPositions) as RoomPosition;
+			// log.debug(JSON.stringify(`spawnPoses: ${rightSpawnPos}, ${topSpawnPos}, ${coreSpawnPos}`));
+			this.bunker = {
+				anchor    : anchor,
+				topSpawn  : topSpawnPos.lookForStructure(STRUCTURE_SPAWN) as StructureSpawn | undefined,
+				coreSpawn : coreSpawnPos.lookForStructure(STRUCTURE_SPAWN) as StructureSpawn | undefined,
+				rightSpawn: rightSpawnPos.lookForStructure(STRUCTURE_SPAWN) as StructureSpawn | undefined,
+			};
+		}
+        this.roadLogistics = new RoadLogistics(this);
+        this.commando = new Commando(this);
     }
 
     private refreshUtilities(){
+        this.linkNetwork.refresh();
+        this.logisticsNetwork.refresh();
         this.transportRequests.refresh();
+        this.roomPlanner.refresh();
+		if (this.bunker) {
+			if (this.bunker.topSpawn) {
+				this.bunker.topSpawn = Game.getObjectById(this.bunker.topSpawn.id) as StructureSpawn | undefined;
+			}
+			if (this.bunker.coreSpawn) {
+				this.bunker.coreSpawn = Game.getObjectById(this.bunker.coreSpawn.id) as StructureSpawn | undefined;
+			}
+			if (this.bunker.rightSpawn) {
+				this.bunker.rightSpawn = Game.getObjectById(this.bunker.rightSpawn.id) as StructureSpawn | undefined;
+			}
+		}
+		this.roadLogistics.refresh();
+		this.commando.refresh();
     }
 
     private registerRoomObjects_cached(): void {
         this.flags = [];
         this.destinations = [];
         this.controller = this.room.controller!;
-        this.extentions = this.room.extensions;
+        this.extensions = this.room.extensions;
         this.links = this.room.links;
         this.availableLinks = _.clone(this.room.links);
+        this.towers = this.room.towers;
+		this.powerSpawn = this.room.powerSpawn;
+		this.nuker = this.room.nuker;
+		this.observer = this.room.observer;
         $.set(this, 'spawns', () =>  _.sortBy(_.filter(this.room.spawns, spawn => spawn.my && spawn.isActive()), spawn => spawn.ref));
         $.set(this, 'storage', () => this.room.storage && this.room.storage.isActive() ? this.room.storage : undefined);
+        $.set(this, 'terminal', () => this.room.terminal && this.room.terminal.isActive() ? this.room.terminal : undefined);
+        $.set(this, 'labs', () => _.sortBy(_.filter(this.room.labs, lab => lab.my && lab.isActive()),
+                lab => 50 * lab.pos.y + lab.pos.x));
         this.pos = (this.storage || this.spawns[0] || this.controller).pos;
         $.set(this, 'sources', () => _.sortBy(_.flatten(_.map(this.rooms, room => room.sources)), source => source.pos.getMultiRoomRangeTo(this.pos)));
         for(const source of this.sources){
@@ -178,7 +272,9 @@ export default class Base {
     }
 
     private refreshRoomObjects(): void {
-        $.refresh(this, 'controller', 'extentions', 'links', 'towers', 'spawns', 'storage', 'constructionSites', 'repairables', 'rechargeables');
+        $.refresh(this, 'controller', 'extensions', 'links', 'towers', 'powerSpawn', 'nuker', 'observer', 'spawns',
+        'storage', 'terminal', 'labs', 'sources', 'extractors', 'constructionSites', 'repairables',
+        'rechargeables');
         $.set(this, 'constructionSites', () => _.flatten(_.map(this.rooms, room => room.constructionSites)), 10);
         $.set(this, 'tombstones', () => _.flatten(_.map(this.rooms, room => room.tombstones)), 5);
         this.drops = _.merge(_.map(this.rooms, room => room.drops));
@@ -186,30 +282,35 @@ export default class Base {
     }
 
     private registerOperationalState(): void {
-        this.level = this.controller.level as 1|2|3|4|5|6|7|8;
-        this.bootstraping = false;
-        this.isIncubating = false;
-        if(this.storage && this.spawns[0]){
-            if(this.controller.level == 8) {
-                this.stage = BaseStage.TEMPLE_OF_NOD;
-            } else {
-                this.stage = BaseStage.HAND_OF_NOD;
-            }
-        } else {
-            this.stage = BaseStage.MCV
-        }
-
-        let defcon = DEFCON.safe;
-        const defconDecayTime = 200;
-        if(this.room.dangerousHostiles.length > 0 && !this.controller.safeMode){
-            const effectiveHostileCount = _.sum(_.map(this.room.dangerousHostiles, hostile => hostile.boosts.length > 0 ? 2 : 1));
-            if(effectiveHostileCount >= 3){
-                defcon = DEFCON.boostedInvasionNPC;
-            } else {
-                defcon = DEFCON.invasionNPC;
-            }
-        }
-        if (this.memory.defcon) {
+        this.level = this.controller.level as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+		this.bootstraping = false;
+		this.isIncubating = false;
+		if (this.storage && this.spawns[0]) {
+			// If the colony has storage and a hatchery
+			if (this.controller.level == 8) {
+				this.stage = BaseStage.TEMPLE_OF_NOD;
+			} else {
+				this.stage = BaseStage.HAND_OF_NOD;
+			}
+		} else {
+			this.stage = BaseStage.MCV;
+		}
+		// this.incubatingColonies = [];
+		this.lowPowerMode = Energetics.lowPowerMode(this);
+		// Set DEFCON level
+		// TODO: finish this
+		let defcon = DEFCON.safe;
+		const defconDecayTime = 200;
+		if (this.room.dangerousHostiles.length > 0 && !this.controller.safeMode) {
+			const effectiveHostileCount = _.sum(_.map(this.room.dangerousHostiles,
+													  hostile => hostile.boosts.length > 0 ? 2 : 1));
+			if (effectiveHostileCount >= 3) {
+				defcon = DEFCON.boostedInvasionNPC;
+			} else {
+				defcon = DEFCON.invasionNPC;
+			}
+		}
+		if (this.memory.defcon) {
 			if (defcon < this.memory.defcon.level) { // decay defcon level over time if defcon less than memory value
 				if (this.memory.defcon.tick + defconDecayTime < Game.time) {
 					this.memory.defcon.level = defcon;
@@ -228,8 +329,8 @@ export default class Base {
 		this.defcon = this.memory.defcon.level;
 		this.breached = (this.room.dangerousHostiles.length > 0 &&
 						 this.creeps.length == 0 &&
-                         !this.controller.safeMode);
-        this.terminalState = undefined;
+						 !this.controller.safeMode);
+		this.terminalState = undefined;
     }
 
     getCreepsByRole(role: string): Creep[] {
@@ -238,10 +339,24 @@ export default class Base {
 
     private registerMCVComponets() {
         this.MCVbuildings = [];
+        if (this.stage > BaseStage.MCV) {
+            //@ts-ignore
+			this.commandCenter = new CommandCenter(this, this.storage!);
+		}
         if(this.spawns[0]){
             this.handOfNod = new HandOfNod(this, this.spawns[0]);
         }
+
+        // Instantiate evolution chamber once there are three labs all in range 2 of each other
+		if (this.terminal && _.filter(this.labs, lab =>
+			_.all(this.labs, otherLab => lab.pos.inRangeTo(otherLab, 2))).length >= 3) {
+			this.evolutionChamber = new EvolutionChamber(this, this.terminal);
+		}
         this.upgradeSite = new UpgradeSite(this, this.controller);
+
+        if (this.towers[0]) {
+			this.oblisk = new Oblisk(this, this.towers[0]);
+		}
         this.MCVbuildings.reverse();
     }
 
@@ -269,6 +384,7 @@ export default class Base {
 		if (verbose) log.debug(`${this.room.print} assets: ` + JSON.stringify(allAssets));
 		return allAssets;
 	}
+
     getUnitByRole(role:string): (Unit | undefined)[] {
         return _.map(this.getCreepsByRole(role), creep => Cobal.units[creep.name]);
     }
@@ -276,7 +392,8 @@ export default class Base {
     spawnMoreCommanders(): void {
         this.commanders = {
             default: new DefaultCommander(this),
-            worker: new WorkerCommander(this),
+            work: new WorkerCommander(this),
+            logistics: new TransportCommander(this),
         }
         for(const mcv of this.MCVbuildings){
             mcv.spawnMoreCommanders();
@@ -285,10 +402,16 @@ export default class Base {
 
     init(): void {
         _.forEach(this.MCVbuildings, mcv => mcv.init());
+        this.roadLogistics.init();
+        this.linkNetwork.init();
+        this.roomPlanner.init();
     }
 
     run(): void {
         _.forEach(this.MCVbuildings, mcv => mcv.run());
+        this.roadLogistics.init();
+        this.linkNetwork.init();
+        this.roomPlanner.run();
         this.stats();
     }
 
@@ -326,4 +449,27 @@ export default class Base {
 			Stats.log(`colonies.${this.name}.avgBarrierHits`, avgBarrierHits);
         }
     }
+
+    private drawCreepReport(coord: Coord): Coord {
+		let {x, y} = coord;
+		const roledata = Cobal.general.getCreepReport(this);
+		const tablePos = new RoomPosition(x, y, this.room.name);
+		y = Visualizer.infoBox(`${this.name} Creeps`, roledata, tablePos, 7);
+		return {x, y};
+	}
+
+	visuals(): void {
+		let x = 1;
+		let y = 11.5;
+		let coord: Coord;
+		coord = this.drawCreepReport({x, y});
+		x = coord.x;
+		y = coord.y;
+
+		for (const hiveCluster of _.compact([this.handOfNod, this.commandCenter, this.evolutionChamber])) {
+			coord = hiveCluster!.visuals({x, y});
+			x = coord.x;
+			y = coord.y;
+		}
+	}
 }

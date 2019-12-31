@@ -212,3 +212,29 @@ interface String {
     padRight(length: number, char: string): string;
     padLeft(length: number, char: string): string;
 }
+
+interface RoomVisual {
+	box(x: number, y: number, w: number, h: number, style?: LineStyle): RoomVisual;
+
+	infoBox(info: string[], x: number, y: number, opts?: { [option: string]: any }): RoomVisual;
+
+	multitext(textLines: string[], x: number, y: number, opts?: { [option: string]: any }): RoomVisual;
+
+	structure(x: number, y: number, type: string, opts?: { [option: string]: any }): RoomVisual;
+
+	connectRoads(opts?: { [option: string]: any }): RoomVisual | void;
+
+	speech(text: string, x: number, y: number, opts?: { [option: string]: any }): RoomVisual;
+
+	animatedPosition(x: number, y: number, opts?: { [option: string]: any }): RoomVisual;
+
+	resource(type: ResourceConstant, x: number, y: number, size?: number, opacity?: number): number;
+
+	_fluid(type: string, x: number, y: number, size?: number, opacity?: number): void;
+
+	_mineral(type: string, x: number, y: number, size?: number, opacity?: number): void;
+
+	_compound(type: string, x: number, y: number, size?: number, opacity?: number): void;
+
+	test(): RoomVisual;
+}

@@ -1,11 +1,11 @@
-import {log} from '../../console/log';
-import {isResource} from '../../declarations/typeGuards';
-import {maxBy, minMax} from '../../utils/utils';
-import Unit from '../../unit/Unit';
-import {Task} from '../Task';
-import {TaskHarvest} from './harvest';
-import {pickupTaskName, TaskPickup} from './pickup';
-import {TaskWithdraw, withdrawTaskName} from './withdraw';
+import { TaskPickup, pickupTaskName } from "./pickup";
+import { TaskWithdraw, withdrawTaskName } from "./withdraw";
+import { isResource } from "declarations/typeGuards";
+import { TaskHarvest } from "./harvest";
+import Unit from "unit/Unit";
+import { maxBy, minMax } from "utils/utils";
+import { log } from "../../console/log";
+import { Task } from "../Task";
 
 export type rechargeTargetType = null;
 export const rechargeTaskName = 'recharge';
@@ -25,8 +25,8 @@ export class TaskRecharge extends Task {
 	}
 
 	private rechargeRateForCreep(creep: Unit, obj: rechargeObjectType): number | false {
-		if (creep.base && creep.base.handOfNod && creep.base.handOfNod.batteries[0]
-			&& obj.id == creep.base.handOfNod.batteries[0].id && creep.roleName != 'queen') {
+		if (creep.base && creep.base.handOfNod && creep.base.handOfNod.battery
+			&& obj.id == creep.base.handOfNod.battery.id && creep.roleName != 'queen') {
 			return false; // only queens can use the hatchery battery
 		}
 		let amount = isResource(obj) ? obj.amount : obj.energy;
@@ -84,10 +84,7 @@ export class TaskRecharge extends Task {
 				return;
 			}
 		} else {
-			// if (creep.roleName == 'queen') {
-			log.debug(`No valid withdraw target for ${creep.print}!`);
-			// }
-			creep.task = undefined;
+			creep.task = null;
 		}
 	}
 

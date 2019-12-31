@@ -9,6 +9,8 @@ import { Pathing } from "Movement/pathing";
 import { Roles } from "creeps/setups/setups";
 import { bodyCost } from "creeps/setups/CreepSetups";
 import  DirectiveBootstrap  from "directives/situational/bootstrap";
+import { LogisticsNetwork } from "logistics/LogisticsNetwork";
+import { log } from "./console/log";
 
 interface GeneralMemory {
     suspsendUntil: {[commanderRef: string]: number;};
@@ -116,7 +118,7 @@ export default class General implements IGeneral {
         }
 
         for(const base of this.bases){
-            this.registerLogisticsRequest(base);
+            this.registerLogisticsRequests(base);
         }
 
     }
@@ -141,9 +143,6 @@ export default class General implements IGeneral {
         this.memory.suspsendUntil[commander.ref] = untilTick;
     }
 
-    registerLogisticsRequest(base: Base) {
-
-    }
     run(): void {
         for(const directive of this.directives){
             directive.run();
@@ -173,9 +172,7 @@ export default class General implements IGeneral {
         const criticalStructures = _.compact([...base.spawns, base.storage, base.terminal]) as Structure[];
         for(const structure of criticalStructures){
             if(structure.hits < structure.hitsMax && structure.pos.findInRange(base.room.dangerousPlayerHostiles, 2).length > 0){
-                //@ts-ignore
                 const ret = base.controller.activateSafeMode();
-                //@ts-ignore
                 if(ret != OK && !base.controller.safeMode){
                     if(base.terminal){
 
@@ -189,9 +186,7 @@ export default class General implements IGeneral {
         if(firstHostile && base.spawns[0]){
             const barriers = _.map(base.room.barriers, barrier => barrier.pos);
             if(Pathing.isReachable(firstHostile.pos, base.spawns[0].pos, barriers)){
-                //@ts-ignore
                 const ret = base.controller.activateSafeMode();
-                //@ts-ignore
                 if(ret != OK && !base.controller.safeMode){
                     if(base.terminal){
 
@@ -202,6 +197,28 @@ export default class General implements IGeneral {
             }
         }
     }
+
+    private registerLogisticsRequests(base: Base): void {
+		// Register logistics requests for all dropped resources and tombstones
+		for (const room of base.rooms) {
+			// Pick up all nontrivial dropped resources
+			for (const resourceType in room.drops) {
+				for (const drop of room.drops[resourceType]) {
+					if (drop.amount > LogisticsNetwork.settings.droppedEnergyThreshold
+						|| drop.resourceType != RESOURCE_ENERGY) {
+						base.logisticsNetwork.requestOutput(drop);
+					}
+				}
+			}
+		}
+		// Place a logistics request directive for every tombstone with non-empty store that isn't on a container
+		for (const tombstone of base.tombstones) {
+			if (_.sum(tombstone.store) > LogisticsNetwork.settings.droppedEnergyThreshold
+				|| _.sum(tombstone.store) > tombstone.store.energy) {
+				base.logisticsNetwork.requestOutput(tombstone, {resourceType: 'all'});
+			}
+		}
+	}
 
     private handleBootstrapping(base: Base): void {
         if(!base.isIncubating){
@@ -219,4 +236,55 @@ export default class General implements IGeneral {
             }
         }
     }
+    getCreepReport(base: Base): string[][] {
+		const spoopyBugFix = false;
+		const roleOccupancy: { [role: string]: [number, number] } = {};
+
+		for (const overlord of this.commanderByBase[base.name]) {
+			for (const role in overlord.creepUsageReport) {
+				const report = overlord.creepUsageReport[role];
+				if (report == undefined) {
+					if (Game.time % 100 == 0) {
+						log.info(`Role ${role} is not reported by ${overlord.ref}!`);
+					}
+				} else {
+					if (roleOccupancy[role] == undefined) {
+						roleOccupancy[role] = [0, 0];
+					}
+					roleOccupancy[role][0] += report[0];
+					roleOccupancy[role][1] += report[1];
+					if (spoopyBugFix) { // bizzarely, if you comment these lines out, the creep report is incorrect
+						log.debug(`report: ${JSON.stringify(report)}`);
+						log.debug(`occupancy: ${JSON.stringify(roleOccupancy)}`);
+					}
+				}
+			}
+		}
+
+
+		// let padLength = _.max(_.map(_.keys(roleOccupancy), str => str.length)) + 2;
+		const roledata: string[][] = [];
+		for (const role in roleOccupancy) {
+			const [current, needed] = roleOccupancy[role];
+			// if (needed > 0) {
+			// 	stringReport.push('| ' + `${role}:`.padRight(padLength) +
+			// 					  `${Math.floor(100 * current / needed)}%`.padLeft(4));
+			// }
+			roledata.push([role, `${current}/${needed}`]);
+		}
+		return roledata;
+	}
+
+    visuals(): void {
+		for (const directive of this.directives) {
+			directive.visuals();
+		}
+		for (const overlord of this.commanders) {
+			overlord.visuals();
+		}
+	// 	this.notifier.visuals();
+	// 	// for (let colony of this.colonies) {
+	// 	// 	this.drawCreepReport(colony);
+	// 	// }
+	}
 }

@@ -1,11 +1,12 @@
-import Base from '../Base';
-import {log} from '../console/log';
-import {isCreep, isUnit} from '../declarations/typeGuards';
-import {Movement, MoveOptions} from '../movement/Movement';
-import Commander from '../commander/Commander';
-import {initializeTask} from '../tasks/initializer';
-import {Task} from '../tasks/Task';
-import { NEW_COBAL_INTERVAL } from '../Cobal';
+import { Movement, MoveOptions } from "movement/Movement";
+import Base from "Base";
+import { Task } from "tasks/Task";
+import { initializeTask } from "tasks/initializer";
+import Commander, { setCommander, getCommander } from "commander/Commander";
+import { NEW_COBAL_INTERVAL } from "Cobal";
+import { isUnit, isCreep } from "declarations/typeGuards";
+import { log } from "../console/log";
+import { CombatIntel } from "../intel/CombatIntel";
 
 export function normalizeUnit(creep: Unit | Creep): Unit | Creep {
 	return Cobal.units[creep.name] || creep;
@@ -43,17 +44,11 @@ const RANGES = {
 };
 
 /**
- * The Zerg class is a wrapper for owned creeps and contains all wrapped creep methods and many additional methods for
+ * The Unit class is a wrapper for owned creeps and contains all wrapped creep methods and many additional methods for
  * direct control of a creep.
  */
+
 export default class Unit {
-    flee(arg0: any, arg1: any): any {
-        throw new Error("Method not implemented.");
-    }
-	boostCounts: any;
-    moveOffCurrentPos() {
-        throw new Error("Method not implemented.");
-    }
 
 	creep: Creep; 						// The creep that this wrapper class will control
 	body: BodyPartDefinition[];    	 	// These properties are all wrapped from this.creep.* to this.*
@@ -76,16 +71,15 @@ export default class Unit {
 	lifetime: number;
 	actionLog: { [actionName: string]: boolean }; // Tracks the actions that a creep has completed this tick
 	blockMovement: boolean; 			// Whether the zerg is allowed to move or not
-	private _task: Task | undefined; 		// Cached Task object that is instantiated once per tick and on change
-    store: Store<ResourceConstant, false>;
+	private _task: Task | null; 		// Cached Task object that is instantiated once per tick and on change
+	inBaseRoom: Base | null;
 
 	constructor(creep: Creep, notifyWhenAttacked = true) {
 		// Copy over creep references
 		this.creep = creep;
 		this.body = creep.body;
 		this.carry = creep.carry;
-        this.carryCapacity = creep.carryCapacity;
-        this.store = creep.store;
+		this.carryCapacity = creep.carryCapacity;
 		this.fatigue = creep.fatigue;
 		this.hits = creep.hits;
 		this.hitsMax = creep.hitsMax;
@@ -127,8 +121,7 @@ export default class Unit {
 			this.carry = creep.carry;
 			this.carryCapacity = creep.carryCapacity;
 			this.fatigue = creep.fatigue;
-            this.hits = creep.hits;
-            this.store = creep.store;
+			this.hits = creep.hits;
 			this.memory = creep.memory;
 			this.roleName = creep.memory.role;
 			this.room = creep.room;
@@ -137,7 +130,7 @@ export default class Unit {
 			this.ticksToLive = creep.ticksToLive;
 			this.actionLog = {};
 			this.blockMovement = false;
-			this._task = undefined; // todo
+			this._task = null; // todo
 		} else {
 			log.debug(`Deleting from global`);
 			delete Cobal.units[this.name];
@@ -151,241 +144,47 @@ export default class Unit {
 		}
 	}
 
-    get print(): string {
-        return `<a href="#!/room/${Game.shard.name}/${this.pos.roomName}">[${this.name}]</a>`
-    }
-
-    /**
-     * Task Logic
-     */
-    get task(): Task | undefined {
-        if(!this._task){
-            this._task = this.memory.task ? initializeTask(this.memory.task) : undefined;
-        }
-        return this._task;
-    }
-
-    set task(task: Task | undefined) {
-        const oldProtoTask = this.memory.task;
-        if(oldProtoTask){
-            const oldRef = oldProtoTask._target.ref;
-            if(Cobal.cache.targets[oldRef]){
-                _.remove(Cobal.cache.targets[oldRef], name => name == this.name);
-            }
-        }
-
-        this.memory.task = task ? task.proto : undefined;
-        if(task){
-            if(task.target){
-                if(!Cobal.cache.targets[task.target.ref]) {
-                    Cobal.cache.targets[task.target.ref] = [];
-                }
-                Cobal.cache.targets[task.target.ref] = [...Cobal.cache.targets[task.target.ref], this.name];
-            }
-            task.creep = this;
-        }
-        this._task = undefined;
-    }
-
-    get hasValidTask(): boolean {
-        return !!this.task && this.task.isValid();
-    };
-
-    get isIdle(): boolean {
-        return !this.task || !this.task.isValid();
-    }
-
-    run(): number | undefined {
-        if(this.task) {
-            return this.task.run();
-        }
-    }
-
-    /**
-     * base Association
-     */
-    get base(): Base | undefined {
-        if(this.memory[_MEM.BASE]){
-            return Cobal.bases[this.memory[_MEM.BASE] as string];
-        }
-        return undefined;
-    }
-
-    set base(newBase: Base | undefined) {
-        if(newBase) {
-            this.memory[_MEM.BASE] = newBase.name;
-        } else {
-            this.memory[_MEM.BASE] = undefined;
-        }
-    }
-
-    get inBaseRoom(): boolean {
-        return Cobal.baseMap[this.room.name] == this.memory[_MEM.BASE];
-    }
-
-    // Body configuration and related data -----------------------------------------------------------------------------
-
-	getActiveBodyparts(type: BodyPartConstant): number {
-		return this.creep.getActiveBodyparts(type);
-	}
-
-	/* The same as creep.getActiveBodyparts, but just counts bodyparts regardless of condition. */
-	getBodyparts(partType: BodyPartConstant): number {
-		return _.filter(this.body, (part: BodyPartDefinition) => part.type == partType).length;
-    }
-
-    // Simultaneous creep actions --------------------------------------------------------------------------------------
-
-	/**
-	 * Determine whether the given action will conflict with an action the creep has already taken.
-	 * See http://docs.screeps.com/simultaneous-actions.html for more details.
-	 */
-	canExecute(actionName: string): boolean {
-		// Only one action can be executed from within a single pipeline
-		let conflictingActions: string[] = [actionName];
-		for (const pipeline of actionPipelines) {
-			if (pipeline.includes(actionName)) conflictingActions = conflictingActions.concat(pipeline);
-		}
-		for (const action of conflictingActions) {
-			if (this.actionLog[action]) {
-				return false;
+	get ticksUntilSpawned(): number | undefined {
+		if (this.spawning) {
+			const spawner = this.pos.lookForStructure(STRUCTURE_SPAWN) as StructureSpawn;
+			if (spawner && spawner.spawning) {
+				return spawner.spawning.remainingTime;
+			} else {
+				// Shouldn't ever get here
+				console.log(`Error determining ticks to spawn for ${this.name} @ ${this.pos.print}!`);
 			}
 		}
-		return true;
 	}
 
-	// Movement and location -------------------------------------------------------------------------------------------
-
-	goTo(destination: RoomPosition | HasPos, options: MoveOptions = {}) {
-		return Movement.goTo(this, destination, options);
+	get print(): string {
+		return '<a href="#!/room/' + Game.shard.name + '/' + this.pos.roomName + '">[' + this.name + ']</a>';
 	}
 
-	goToRoom(roomName: string, options: MoveOptions = {}) {
-		return Movement.goToRoom(this, roomName, options);
-	}
+	// Wrapped creep methods ===========================================================================================
 
-	inSameRoomAs(target: HasPos): boolean {
-		return this.pos.roomName == target.pos.roomName;
-	}
-
-	safelyInRoom(roomName: string): boolean {
-		return this.room.name == roomName && !this.pos.isEdge;
-	}
-
-	get inRampart(): boolean {
-		return this.creep.inRampart;
-	}
-
-	get isMoving(): boolean {
-		const moveData = this.memory._go as MoveData | undefined;
-		return !!moveData && !!moveData.path && moveData.path.length > 1;
-	}
-
-	/**
-	 * Moves off of an exit tile
-	 */
-	moveOffExit(avoidSwamp = true): ScreepsReturnCode {
-		return Movement.moveOffExit(this, avoidSwamp);
-	}
-
-	moveOffExitToward(pos: RoomPosition, detour = true): number | undefined {
-		return Movement.moveOffExitToward(this, pos, detour);
-	}
-
-
-
-	// Miscellaneous fun stuff -----------------------------------------------------------------------------------------
-
-	sayLoop(messageList: string[], pub?: boolean) {
-		return this.say(messageList[Game.time % messageList.length], pub);
-	}
-
-	sayRandom(phrases: string[], pub?: boolean) {
-		return this.say(phrases[Math.floor(Math.random() * phrases.length)], pub);
-	}
-
-
-    transfer(target: Creep | Unit | Structure, resourceType: ResourceConstant = RESOURCE_ENERGY, amount?: number) {
-		let result: ScreepsReturnCode;
-		if (target instanceof Unit) {
-			result = this.creep.transfer(target.creep, resourceType, amount);
-		} else {
-			result = this.creep.transfer(target, resourceType, amount);
+	attack(target: Creep | Structure) {
+		const result = this.creep.attack(target);
+		if (result == OK) {
+			this.actionLog.attack = true;
+			if (isCreep(target)) {
+				if (target.hitsPredicted == undefined) target.hitsPredicted = target.hits;
+				target.hitsPredicted -= CombatIntel.predictedDamageAmount(this.creep, target, 'attack');
+				// account for hitback effects
+				if (this.creep.hitsPredicted == undefined) this.creep.hitsPredicted = this.creep.hits;
+				this.creep.hitsPredicted -= CombatIntel.predictedDamageAmount(target, this.creep, 'attack');
+			}
+			if (this.memory.talkative) this.say(`💥`);
 		}
-		if (!this.actionLog.transfer) this.actionLog.transfer = (result == OK);
 		return result;
 	}
 
-	goTransfer(target: Creep | Unit | Structure, resourceType: ResourceConstant = RESOURCE_ENERGY, amount?: number) {
-		if (this.pos.inRangeToPos(target.pos, RANGES.TRANSFER)) {
-			return this.transfer(target, resourceType, amount);
-		} else {
-			return this.goTo(target);
-		}
-	}
-
-	withdraw(target: Structure | Tombstone, resourceType: ResourceConstant = RESOURCE_ENERGY, amount?: number) {
-		const result = this.creep.withdraw(target, resourceType, amount);
-		if (!this.actionLog.withdraw) this.actionLog.withdraw = (result == OK);
+	attackController(controller: StructureController) {
+		const result = this.creep.attackController(controller);
+		if (!this.actionLog.attackController) this.actionLog.attackController = (result == OK);
 		return result;
 	}
 
-	goWithdraw(target: Structure | Tombstone, resourceType: ResourceConstant = RESOURCE_ENERGY, amount?: number) {
-		if (this.pos.inRangeToPos(target.pos, RANGES.WITHDRAW)) {
-			return this.withdraw(target, resourceType, amount);
-		} else {
-			return this.goTo(target);
-		}
-    }
-
-    repair(target: Structure) {
-		const result = this.creep.repair(target);
-		if (!this.actionLog.repair) this.actionLog.repair = (result == OK);
-		return result;
-	}
-
-	goRepair(target: Structure) {
-		if (this.pos.inRangeToPos(target.pos, RANGES.REPAIR)) {
-			return this.repair(target);
-		} else {
-			return this.goTo(target);
-		}
-	}
-
-	reserveController(controller: StructureController) {
-		const result = this.creep.reserveController(controller);
-		if (!this.actionLog.reserveController) this.actionLog.reserveController = (result == OK);
-		return result;
-	}
-
-	/* Say a message; maximum message length is 10 characters */
-	say(message: string, pub?: boolean) {
-		return this.creep.say(message, pub);
-	}
-
-	signController(target: StructureController, text: string) {
-		const result = this.creep.signController(target, text);
-		if (!this.actionLog.signController) this.actionLog.signController = (result == OK);
-		return result;
-	}
-
-	suicide() {
-		return this.creep.suicide();
-	}
-
-	upgradeController(controller: StructureController) {
-		const result = this.creep.upgradeController(controller);
-		if (!this.actionLog.upgradeController) this.actionLog.upgradeController = (result == OK);
-		// Determine amount of upgrade power
-		// let weightedUpgraderParts = _.map(this.boostCounts, )
-		// let upgradeAmount = this.getActiveBodyparts(WORK) * UPGRADE_CONTROLLER_POWER;
-		// let upgrade
-
-		// Stats.accumulate(`colonies.${this.colony.name}.rcl.progressTotal`, upgradeAmount);
-		return result;
-    }
-
-    build(target: ConstructionSite) {
+	build(target: ConstructionSite) {
 		const result = this.creep.build(target);
 		if (!this.actionLog.build) this.actionLog.build = (result == OK);
 		return result;
@@ -461,13 +260,6 @@ export default class Unit {
 			return ERR_BUSY;
 		}
 	}
-	attack(target: any): number {
-		return OK
-	}
-
-	rangedAttack(target: any): number {
-		return OK
-	}
 
 	notifyWhenAttacked(enabled: boolean) {
 		return this.creep.notifyWhenAttacked(enabled);
@@ -478,16 +270,431 @@ export default class Unit {
 		if (!this.actionLog.pickup) this.actionLog.pickup = (result == OK);
 		return result;
 	}
-	heal(target: any): number{
-		return OK
-	}
-	rangedHeal(target: any): number {
-		return OK
-	}
 
-    attackController(controller: StructureController) {
-		const result = this.creep.attackController(controller);
-		if (!this.actionLog.attackController) this.actionLog.attackController = (result == OK);
+	rangedAttack(target: Creep | Structure) {
+		const result = this.creep.rangedAttack(target);
+		if (result == OK) {
+			this.actionLog.rangedAttack = true;
+			if (isCreep(target)) {
+				if (target.hitsPredicted == undefined) target.hitsPredicted = target.hits;
+				target.hitsPredicted -= CombatIntel.predictedDamageAmount(this, target, 'rangedAttack');
+			}
+			if (this.memory.talkative) this.say(`🔫`);
+		}
 		return result;
 	}
+
+	rangedMassAttack() {
+		const result = this.creep.rangedMassAttack();
+		if (result == OK) {
+			this.actionLog.rangedMassAttack = true;
+			for (const target of this.pos.findInRange(this.room.hostiles, 3)) {
+				if (target.hitsPredicted == undefined) target.hitsPredicted = target.hits;
+				target.hitsPredicted -= CombatIntel.getMassAttackDamageTo(this, target);
+			}
+			if (this.memory.talkative) this.say(`💣`);
+		}
+		return result;
+	}
+
+	repair(target: Structure) {
+		const result = this.creep.repair(target);
+		if (!this.actionLog.repair) this.actionLog.repair = (result == OK);
+		return result;
+	}
+
+	goRepair(target: Structure) {
+		if (this.pos.inRangeToPos(target.pos, RANGES.REPAIR)) {
+			return this.repair(target);
+		} else {
+			return this.goTo(target);
+		}
+	}
+
+	reserveController(controller: StructureController) {
+		const result = this.creep.reserveController(controller);
+		if (!this.actionLog.reserveController) this.actionLog.reserveController = (result == OK);
+		return result;
+	}
+
+	/* Say a message; maximum message length is 10 characters */
+	say(message: string, pub?: boolean) {
+		return this.creep.say(message, pub);
+	}
+
+	signController(target: StructureController, text: string) {
+		const result = this.creep.signController(target, text);
+		if (!this.actionLog.signController) this.actionLog.signController = (result == OK);
+		return result;
+	}
+
+	suicide() {
+		return this.creep.suicide();
+	}
+
+	upgradeController(controller: StructureController) {
+		const result = this.creep.upgradeController(controller);
+		if (!this.actionLog.upgradeController) this.actionLog.upgradeController = (result == OK);
+		// Determine amount of upgrade power
+		// let weightedUpgraderParts = _.map(this.boostCounts, )
+		// let upgradeAmount = this.getActiveBodyparts(WORK) * UPGRADE_CONTROLLER_POWER;
+		// let upgrade
+
+		// Stats.accumulate(`colonies.${this.colony.name}.rcl.progressTotal`, upgradeAmount);
+		return result;
+	}
+
+	heal(target: Creep | Unit, rangedHealInstead = false) {
+		if (rangedHealInstead && !this.pos.isNearTo(target)) {
+			return this.rangedHeal(target);
+		}
+		const creep = toCreep(target);
+		const result = this.creep.heal(creep);
+		if (result == OK) {
+			this.actionLog.heal = true;
+			if (creep.hitsPredicted == undefined) creep.hitsPredicted = creep.hits;
+			creep.hitsPredicted += CombatIntel.getHealAmount(this);
+			if (this.memory.talkative) this.say('🚑');
+		}
+		return result;
+	}
+
+	rangedHeal(target: Creep | Unit) {
+		const creep = toCreep(target);
+		const result = this.creep.rangedHeal(creep);
+		if (result == OK) {
+			this.actionLog.rangedHeal = true;
+			if (creep.hitsPredicted == undefined) creep.hitsPredicted = creep.hits;
+			creep.hitsPredicted += CombatIntel.getRangedHealAmount(this);
+			if (this.memory.talkative) this.say(`💉`);
+		}
+		return result;
+	}
+
+	transfer(target: Creep | Unit | Structure, resourceType: ResourceConstant = RESOURCE_ENERGY, amount?: number) {
+		let result: ScreepsReturnCode;
+		if (target instanceof Unit) {
+			result = this.creep.transfer(target.creep, resourceType, amount);
+		} else {
+			result = this.creep.transfer(target, resourceType, amount);
+		}
+		if (!this.actionLog.transfer) this.actionLog.transfer = (result == OK);
+		return result;
+	}
+
+	goTransfer(target: Creep | Unit | Structure, resourceType: ResourceConstant = RESOURCE_ENERGY, amount?: number) {
+		if (this.pos.inRangeToPos(target.pos, RANGES.TRANSFER)) {
+			return this.transfer(target, resourceType, amount);
+		} else {
+			return this.goTo(target);
+		}
+	}
+
+	withdraw(target: Structure | Tombstone, resourceType: ResourceConstant = RESOURCE_ENERGY, amount?: number) {
+		const result = this.creep.withdraw(target, resourceType, amount);
+		if (!this.actionLog.withdraw) this.actionLog.withdraw = (result == OK);
+		return result;
+	}
+
+	goWithdraw(target: Structure | Tombstone, resourceType: ResourceConstant = RESOURCE_ENERGY, amount?: number) {
+		if (this.pos.inRangeToPos(target.pos, RANGES.WITHDRAW)) {
+			return this.withdraw(target, resourceType, amount);
+		} else {
+			return this.goTo(target);
+		}
+	}
+
+	// Simultaneous creep actions --------------------------------------------------------------------------------------
+
+	/**
+	 * Determine whether the given action will conflict with an action the creep has already taken.
+	 * See http://docs.screeps.com/simultaneous-actions.html for more details.
+	 */
+	canExecute(actionName: string): boolean {
+		// Only one action can be executed from within a single pipeline
+		let conflictingActions: string[] = [actionName];
+		for (const pipeline of actionPipelines) {
+			if (pipeline.includes(actionName)) conflictingActions = conflictingActions.concat(pipeline);
+		}
+		for (const action of conflictingActions) {
+			if (this.actionLog[action]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	// Body configuration and related data -----------------------------------------------------------------------------
+
+	getActiveBodyparts(type: BodyPartConstant): number {
+		return this.creep.getActiveBodyparts(type);
+	}
+
+	/* The same as creep.getActiveBodyparts, but just counts bodyparts regardless of condition. */
+	getBodyparts(partType: BodyPartConstant): number {
+		return _.filter(this.body, (part: BodyPartDefinition) => part.type == partType).length;
+	}
+
+	// Custom creep methods ============================================================================================
+
+	// Carry methods
+
+	get hasMineralsInCarry(): boolean {
+		for (const resourceType in this.carry) {
+			if (resourceType != RESOURCE_ENERGY && (this.carry[<ResourceConstant>resourceType] || 0) > 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// Boosting logic --------------------------------------------------------------------------------------------------
+
+	get boosts(): _ResourceConstantSansEnergy[] {
+		return this.creep.boosts;
+	}
+
+	get boostCounts(): { [boostType: string]: number } {
+		return this.creep.boostCounts;
+	}
+
+	get needsBoosts(): boolean {
+		if (this.overlord) {
+			return this.overlord.shouldBoost(this);
+		}
+		return false;
+	}
+
+	// Commander logic --------------------------------------------------------------------------------------------------
+
+	get commander(): Commander | null {
+		return getCommander(this);
+	}
+
+	set overlord(newOverlord: Commander | null) {
+		setCommander(this, newOverlord);
+	}
+
+	/* Reassigns the creep to work under a new overlord and as a new role. */
+	reassign(newOverlord: Commander | null, newRole: string, invalidateTask = true) {
+		this.overlord = newOverlord;
+		this.roleName = newRole;
+		this.memory.role = newRole;
+		if (invalidateTask) {
+			this.task = null;
+		}
+	}
+
+	// Task logic ------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Wrapper for _task
+	 */
+	get task(): Task | null {
+		if (!this._task) {
+			this._task = this.memory.task ? initializeTask(this.memory.task) : null;
+		}
+		return this._task;
+	}
+
+	/**
+	 * Assign the creep a task with the setter, replacing creep.assign(Task)
+	 */
+	set task(task: Task | null) {
+		// Unregister target from old task if applicable
+		const oldProtoTask = this.memory.task;
+		if (oldProtoTask) {
+			const oldRef = oldProtoTask._target.ref;
+			if (Cobal.cache.targets[oldRef]) {
+				_.remove(Cobal.cache.targets[oldRef], name => name == this.name);
+			}
+		}
+		// Set the new task
+		this.memory.task = task ? task.proto : null;
+		if (task) {
+			if (task.target) {
+				// Register task target in cache if it is actively targeting something (excludes goTo and similar)
+				if (!Cobal.cache.targets[task.target.ref]) {
+					Cobal.cache.targets[task.target.ref] = [];
+				}
+				Cobal.cache.targets[task.target.ref].push(this.name);
+			}
+			// Register references to creep
+			task.creep = this;
+		}
+		// Clear cache
+		this._task = null;
+	}
+
+	/**
+	 * Does the creep have a valid task at the moment?
+	 */
+	get hasValidTask(): boolean {
+		return !!this.task && this.task.isValid();
+	}
+
+	/**
+	 * Creeps are idle if they don't have a task.
+	 */
+	get isIdle(): boolean {
+		return !this.task || !this.task.isValid();
+	}
+
+	/**
+	 * Execute the task you currently have.
+	 */
+	run(): number | undefined {
+		if (this.task) {
+			return this.task.run();
+		}
+	}
+
+	// Colony association ----------------------------------------------------------------------------------------------
+
+	/**
+	 * Colony that the creep belongs to.
+	 */
+	get base(): Base | null {
+		if (this.memory[_MEM.BASE] != null) {
+			return Cobal.bases[this.memory[_MEM.BASE] as string];
+		} else {
+			return null;
+		}
+	}
+
+	set base(newColony: Base | null) {
+		if (newColony != null) {
+			this.memory[_MEM.BASE] = newColony.name;
+		} else {
+			this.memory[_MEM.BASE] = null;
+		}
+	}
+
+	/**
+	 * If the creep is in a colony room or outpost
+	 */
+	get inColonyRoom(): boolean {
+		return Cobal.baseMap[this.room.name] == this.memory[_MEM.BASE];
+	}
+
+	// Movement and location -------------------------------------------------------------------------------------------
+
+	goTo(destination: RoomPosition | HasPos, options: MoveOptions = {}) {
+		return Movement.goTo(this, destination, options);
+	}
+
+	goToRoom(roomName: string, options: MoveOptions = {}) {
+		return Movement.goToRoom(this, roomName, options);
+	}
+
+	inSameRoomAs(target: HasPos): boolean {
+		return this.pos.roomName == target.pos.roomName;
+	}
+
+	safelyInRoom(roomName: string): boolean {
+		return this.room.name == roomName && !this.pos.isEdge;
+	}
+
+	get inRampart(): boolean {
+		return this.creep.inRampart;
+	}
+
+	get isMoving(): boolean {
+		const moveData = this.memory._go as MoveData | undefined;
+		return !!moveData && !!moveData.path && moveData.path.length > 1;
+	}
+
+	/**
+	 * Kite around hostiles in the room
+	 */
+	kite(avoidGoals: (RoomPosition | HasPos)[] = this.room.hostiles, options: MoveOptions = {}): number | undefined {
+		_.defaults(options, {
+			fleeRange: 5
+		});
+		return Movement.kite(this, avoidGoals, options);
+	}
+
+	private defaultFleeGoals() {
+		let fleeGoals: (RoomPosition | HasPos)[] = [];
+		fleeGoals = fleeGoals.concat(this.room.hostiles)
+							 .concat(_.filter(this.room.keeperLairs, lair => (lair.ticksToSpawn || Infinity) < 10));
+		return fleeGoals;
+	}
+
+	/**
+	 * Flee from hostiles in the room, while not repathing every tick
+	 */
+	flee(avoidGoals: (RoomPosition | HasPos)[] = this.room.fleeDefaults,
+		 fleeOptions: FleeOptions              = {},
+		 moveOptions: MoveOptions              = {}): boolean {
+		if (avoidGoals.length == 0) {
+			return false;
+		} else if (this.room.controller && this.room.controller.my && this.room.controller.safeMode) {
+			return false;
+		} else {
+			const fleeing = Movement.flee(this, avoidGoals, fleeOptions.dropEnergy, moveOptions) != undefined;
+			if (fleeing) {
+				// Drop energy if needed
+				if (fleeOptions.dropEnergy && this.carry.energy > 0) {
+					const nearbyContainers = this.pos.findInRange(this.room.storageUnits, 1);
+					if (nearbyContainers.length > 0) {
+						this.transfer(_.first(nearbyContainers), RESOURCE_ENERGY);
+					} else {
+						this.drop(RESOURCE_ENERGY);
+					}
+				}
+				// Invalidate task
+				if (fleeOptions.invalidateTask) {
+					this.task = null;
+				}
+			}
+			return fleeing;
+		}
+	}
+
+	/**
+	 * Park the creep off-roads
+	 */
+	park(pos: RoomPosition = this.pos, maintainDistance = false): number {
+		return Movement.park(this, pos, maintainDistance);
+	}
+
+	/**
+	 * Moves a creep off of the current tile to the first available neighbor
+	 */
+	moveOffCurrentPos(): number | undefined {
+		return Movement.moveOffCurrentPos(this);
+	}
+
+	/**
+	 * Moves onto an exit tile
+	 */
+	moveOnExit(): ScreepsReturnCode | undefined {
+		return Movement.moveOnExit(this);
+	}
+
+	/**
+	 * Moves off of an exit tile
+	 */
+	moveOffExit(avoidSwamp = true): ScreepsReturnCode {
+		return Movement.moveOffExit(this, avoidSwamp);
+	}
+
+	moveOffExitToward(pos: RoomPosition, detour = true): number | undefined {
+		return Movement.moveOffExitToward(this, pos, detour);
+	}
+
+
+
+	// Miscellaneous fun stuff -----------------------------------------------------------------------------------------
+
+	sayLoop(messageList: string[], pub?: boolean) {
+		return this.say(messageList[Game.time % messageList.length], pub);
+	}
+
+	sayRandom(phrases: string[], pub?: boolean) {
+		return this.say(phrases[Math.floor(Math.random() * phrases.length)], pub);
+	}
+
 }
+

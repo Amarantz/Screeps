@@ -2,17 +2,19 @@ import { CreepSetup, bodyCost } from "creeps/setups/CreepSetups";
 import $ from '../caching/GlobalCache';
 import Commander from "commander/Commander";
 import MCV from "./mcv";
-import Base from "Base";
+import Base, { BaseStage } from "Base";
 import Mem from "memory/memory";
 import { EnergyStructure } from "declarations/typeGuards";
 import Unit from "unit/Unit";
 import { log } from "console/log";
 import { Movement } from "movement/Movement";
 import { Pathing } from "movement/Pathing";
-import { exponentialMovingAverage } from "utils/utils";
+import { exponentialMovingAverage, hasMinerals } from "utils/utils";
 import Stats from "../stats/stats";
 import { QueenCommander } from "commander/core/queen";
 import { TransportRequestGroup } from "logistics/TransportRequestGroup";
+import { Priority } from "priorities/priorities";
+import { Visualizer } from "../Visualizer";
 
 const ERR_ROOM_ENERGY_CAPACITY_NOT_ENOUGH = -20;
 const ERR_SPECIFIED_SPAWN_BUSY = -21;
@@ -57,7 +59,7 @@ export default class HandOfNod extends MCV {
     avaliableSpawns: StructureSpawn[];
     extensions: StructureExtension[];
     energyStrctures: (StructureSpawn | StructureExtension)[];
-    batteries: StructureContainer[];
+    battery: StructureContainer | undefined;
     towers: StructureTower[];
     link: StructureLink | undefined;
     energyStructures: EnergyStructure[];
@@ -81,8 +83,8 @@ export default class HandOfNod extends MCV {
         this.memory = Mem.wrap(this.base.memory, 'handOfNod', HandOfNodMemoryDefaults, true);
         this.spawns = base.spawns;
         this.avaliableSpawns = _.filter(this.spawns, spawn => !spawn.spawning);
-        this.extensions = base.extentions;
-        this.batteries = _.filter(this.room.containers, container => container.pos.findInRange(FIND_MY_SPAWNS, 4));
+        this.extensions = base.extensions;
+        this.battery = this.pos.findClosestByLimitedRange(this.room.containers, 2);
         $.set(this, 'energyStructures', () => this.computeEnergyStructures());
         this.productionPriorities = [];
         this.productionQueue = {};
@@ -98,15 +100,15 @@ export default class HandOfNod extends MCV {
     refresh(): void {
         this.memory = Mem.wrap(this.base.memory, 'handOfNod', HandOfNodMemoryDefaults, true);
         $.refreshRoom(this);
-        $.refresh(this, 'spawns', 'extensions', 'energyStructures', 'link', 'towers', 'batteries');
+        $.refresh(this, 'spawns', 'extensions', 'energyStructures', 'link', 'towers', 'battery');
         this.avaliableSpawns = _.filter(this.spawns, spawn => !spawn.spawning);
         this.isOverloaded = false;
         this.productionQueue = {};
         this.productionPriorities = [];
     }
     get idlePos(): RoomPosition {
-        if(this.batteries.length > 0){
-            return this.batteries[0].pos;
+        if(this.battery){
+            return this.battery.pos;
         }
         return this.spawns[0].pos.availableNeighbors(true)[0];
     }
@@ -118,7 +120,24 @@ export default class HandOfNod extends MCV {
     }
 
     private registerEnergyRequests(): void {
+        if(this.link && this.link.isEmpty){
 
+        }
+
+        if(this.battery) {
+            const threshold = this.base.stage == BaseStage.MCV ? 0.75 : 0.5;
+			if (this.battery.energy < threshold * this.battery.storeCapacity) {
+				this.base.logisticsNetwork.requestInput(this.battery, {multiplier: 1.5});
+			}
+			// get rid of any minerals in the container if present
+			if (hasMinerals(this.battery.store)) {
+				this.base.logisticsNetwork.requestOutputMinerals(this.battery);
+			}
+        }
+
+        _.forEach(this.energyStructures, struct => this.transportRequests.requestInput(struct, Priority.NormalLow));
+        const refillTowers = _.filter(this.towers, tower => tower.energy < this.settings.refillTowersBelow);
+        _.forEach(refillTowers, tower => this.transportRequests.requestInput(tower, Priority.NormalLow));
     }
 
     private generateCreepName(roleName: string) : string {
@@ -147,15 +166,13 @@ export default class HandOfNod extends MCV {
 			// 	&& spawnToUse.id == this.colony.bunker.coreSpawn.id && !options.directions) {
 			// 	options.directions = [TOP, RIGHT]; // don't spawn into the manager spot
 			// }
-			protoCreep.name = this.generateCreepName(protoCreep.name); // modify the creep name to make it unique
 			if (bodyCost(protoCreep.body) > this.room.energyCapacityAvailable) {
 				return ERR_ROOM_ENERGY_CAPACITY_NOT_ENOUGH;
-			}
+            }
+            protoCreep.name = this.generateCreepName(protoCreep.name); // modify the creep name to make it unique
             protoCreep.memory.data.origin = spawnToUse.pos.roomName;
-            //@ts-ignore
 			const result = spawnToUse.spawnCreep(protoCreep.body, protoCreep.name, {
 				memory          : protoCreep.memory,
-				energyStructures: this.energyStructures,
 				directions      : options.directions
 			});
 			if (result == OK) {
@@ -184,7 +201,7 @@ export default class HandOfNod extends MCV {
             [_MEM.BASE]: commander.base.name,
             [_MEM.COMMANDER]: commander.ref,
             role: setup.role,
-            task: undefined,
+            task: null,
             data: {
                 origin: '',
             },
@@ -254,27 +271,33 @@ export default class HandOfNod extends MCV {
     }
 
     private handleSpawns(): void {
-        while (this.avaliableSpawns.length > 0 && this.productionPriorities.length > 0) {
-            const result = this.spawnHighestPriorityCreep();
-            if(result == ERR_NOT_ENOUGH_ENERGY){
-                this.isOverloaded = true;
-            }
-            if(result != OK && result != ERR_SPECIFIED_SPAWN_BUSY){
-                for(const spawn of this.spawns){
-                    if(spawn.spawning && spawn.spawning.remainingTime <= 1 && spawn.pos.findInRange(FIND_MY_CREEPS, 1).length > 0) {
-                        let directions: DirectionConstant[];
-                        if(spawn.spawning.directions){
-                            directions = spawn.spawning.directions;
-                        } else {
-                            directions = _.map(spawn.pos.availableNeighbors(true), pos => spawn.pos.getDirectionTo(pos));
-                        }
-                        const exitPos = Pathing.positionAtDirection(spawn.pos, _.first(directions)) as RoomPosition;
-                        Movement.vacatePos(exitPos);
-                    }
-                }
-            }
-        }
+		// Spawn all queued creeps that you can
+		while (this.avaliableSpawns.length > 0) {
+			const result = this.spawnHighestPriorityCreep();
+			if (result == ERR_NOT_ENOUGH_ENERGY) { // if you can't spawn something you want to
+				this.isOverloaded = true;
+			}
+			if (result != OK && result != ERR_SPECIFIED_SPAWN_BUSY) {
+				// Can't spawn creep right now
+				break;
+			}
+		}
+		// Move creeps off of exit position to let the spawning creep out if necessary
+		for (const spawn of this.spawns) {
+			if (spawn.spawning && spawn.spawning.remainingTime <= 1
+				&& spawn.pos.findInRange(FIND_MY_CREEPS, 1).length > 0) {
+				let directions: DirectionConstant[];
+				if (spawn.spawning.directions) {
+					directions = spawn.spawning.directions;
+				} else {
+					directions = _.map(spawn.pos.availableNeighbors(true), pos => spawn.pos.getDirectionTo(pos));
+				}
+				const exitPos = Pathing.positionAtDirection(spawn.pos, _.first(directions)) as RoomPosition;
+				Movement.vacatePos(exitPos);
+			}
+		}
     }
+
     spawnMoreCommanders(): void {
         this.commander = new QueenCommander(this);
     }
@@ -300,4 +323,46 @@ export default class HandOfNod extends MCV {
         this.memory.stats = {overload, uptime, longUptime};
 
     }
+
+    visuals(coord: Coord): Coord {
+		let {x, y} = coord;
+		const spawning: string[] = [];
+		const spawnProgress: [number, number][] = [];
+		_.forEach(this.spawns, function(spawn) {
+			if (spawn.spawning) {
+				spawning.push(spawn.spawning.name.split('_')[0]);
+				const timeElapsed = spawn.spawning.needTime - spawn.spawning.remainingTime;
+				spawnProgress.push([timeElapsed, spawn.spawning.needTime]);
+			}
+		});
+		const boxCoords = Visualizer.section(`${this.base.name} Hatchery`, {x, y, roomName: this.room.name},
+											 9.5, 3 + spawning.length + .1);
+		const boxX = boxCoords.x;
+		y = boxCoords.y + 0.25;
+
+		// Log energy
+		Visualizer.text('Energy', {x: boxX, y: y, roomName: this.room.name});
+		Visualizer.barGraph([this.room.energyAvailable, this.room.energyCapacityAvailable],
+							{x: boxX + 4, y: y, roomName: this.room.name}, 5);
+		y += 1;
+
+		// Log uptime
+		const uptime = this.memory.stats.uptime;
+		Visualizer.text('Uptime', {x: boxX, y: y, roomName: this.room.name});
+		Visualizer.barGraph(uptime, {x: boxX + 4, y: y, roomName: this.room.name}, 5);
+		y += 1;
+
+		// Log overload status
+		const overload = this.memory.stats.overload;
+		Visualizer.text('Overload', {x: boxX, y: y, roomName: this.room.name});
+		Visualizer.barGraph(overload, {x: boxX + 4, y: y, roomName: this.room.name}, 5);
+		y += 1;
+
+		for (const i in spawning) {
+			Visualizer.text(spawning[i], {x: boxX, y: y, roomName: this.room.name});
+			Visualizer.barGraph(spawnProgress[i], {x: boxX + 4, y: y, roomName: this.room.name}, 5);
+			y += 1;
+		}
+		return {x: x, y: y + .25};
+	}
 }

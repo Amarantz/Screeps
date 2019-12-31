@@ -1,6 +1,6 @@
 import {initializeTask} from './initializer';
+import { log } from '../console/log';
 import Unit from 'unit/Unit';
-import { log } from 'console/log';
 
 type targetType = { ref: string, pos: ProtoPos }; // overwrite this variable to specify more precise typing
 
@@ -22,7 +22,7 @@ export abstract class Task {
 		ref: string; 				// Target id or name
 		_pos: ProtoPos; 			// Target position's coordinates in case vision is lost
 	};
-	_parent: ProtoTask | undefined; 	// The parent of this task, if any. Task is changed to parent upon completion.
+	_parent: ProtoTask | null; 	// The parent of this task, if any. Task is changed to parent upon completion.
 	tick: number;				// When the task was set
 	settings: TaskSettings;		// Settings for a given type of task; shouldn't be modified on an instance-basis
 	options: TaskOptions;		// Options for a specific instance of a task
@@ -51,7 +51,7 @@ export abstract class Task {
 				}
 			};
 		}
-		this._parent = undefined;
+		this._parent = null;
 		this.settings = {
 			targetRange: 1,			// range at which you can perform action
 			workOffRoad: false,		// whether work() should be performed off road
@@ -96,7 +96,7 @@ export abstract class Task {
 	 * Return the wrapped creep which is executing this task
 	 */
 	get creep(): Unit { // Get task's own creep by its name
-		// Returns Unit wrapper instead of creep to use monkey-patched functions
+		// Returns zerg wrapper instead of creep to use monkey-patched functions
 		return Cobal.units[this._creep.name];
 	}
 
@@ -134,15 +134,15 @@ export abstract class Task {
 	/**
 	 * Get the Task's parent
 	 */
-	get parent(): Task | undefined {
-		return (this._parent ? initializeTask(this._parent) : undefined);
+	get parent(): Task | null {
+		return (this._parent ? initializeTask(this._parent) : null);
 	}
 
 	/**
 	 * Set the Task's parent
 	 */
-	set parent(parentTask: Task | undefined) {
-		this._parent = parentTask ? parentTask.proto : undefined;
+	set parent(parentTask: Task | null) {
+		this._parent = parentTask ? parentTask.proto : null;
 		// If the task is already assigned to a creep, update their memory
 		if (this.creep) {
 			this.creep.task = this;
@@ -306,3 +306,4 @@ export abstract class Task {
 		}
 	}
 }
+

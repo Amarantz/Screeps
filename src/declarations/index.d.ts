@@ -30,11 +30,63 @@ interface ICobal {
     cache: ICache;
     memory: ICobalMemory;
     expections: Error[];
+    tradeNetwork: ITradeNetwork;
+    terminalNetwork :ITerminalNetwork;
     build(): void;
     init(): void;
     run(): void;
     refresh(): void;
     postRun(): void;
+}
+
+interface TerminalState {
+	name: string;
+	type: 'in' | 'out' | 'in/out';
+	amounts: { [resourceType: string]: number };
+	tolerance: number;
+}
+
+
+interface ITerminalNetwork {
+	allTerminals: StructureTerminal[];
+	readyTerminals: StructureTerminal[];
+	// terminals: StructureTerminal[];
+	memory: any;
+
+	refresh(): void;
+
+	requestResource(terminal: StructureTerminal, resourceType: ResourceConstant, amount: number): void;
+
+	registerTerminalState(terminal: StructureTerminal, state: TerminalState): void;
+
+	init(): void;
+
+	run(): void;
+}
+
+interface ITradeNetwork {
+	memory: any;
+
+	refresh(): void;
+
+	priceOf(mineralType: ResourceConstant): number;
+
+	lookForGoodDeals(terminal: StructureTerminal, mineral: string, margin?: number): void;
+
+	sellDirectly(terminal: StructureTerminal, resource: ResourceConstant, amount?: number,
+				 flexibleAmount?: boolean): number | undefined;
+
+	sell(terminal: StructureTerminal, resource: ResourceConstant, amount: number,
+		 maxOrdersOfType?: number): number | undefined;
+
+	buy(terminal: StructureTerminal, mineralType: ResourceConstant, amount: number): void;
+
+	maintainBuyOrder(terminal: StructureTerminal, resource: ResourceConstant, amount: number,
+					 maxOrdersOfType?: number): void;
+
+	init(): void;
+
+	run(): void;
 }
 
 interface ICobalMemory {
@@ -50,16 +102,19 @@ interface IGeneral{
     removeDirective(directive: Directive): void;
     registerCommander(commander: Commander): void;
     getCommanderForBased(base: Base): Commander[];
+    getCreepReport(colony: any): string[][];
     refresh(): void;
     build(): void;
     init(): void;
     run(): void;
+    visuals(): void;
 }
 
 interface INotifier {
     alert(message: string, roomName: string, priority?: number): void;
     clear(): void;
     generateNotificationsList(links: boolean): string[];
+    visuals(): void;
 }
 
 interface ICache{
@@ -176,8 +231,19 @@ interface ProtoTask {
 		ref: string;
 		_pos: ProtoPos;
 	};
-	_parent: ProtoTask | undefined;
+	_parent: ProtoTask | null;
 	tick: number;
 	options: TaskOptions;
 	data: TaskData;
+}
+
+
+interface IExpansionPlanner {
+
+	refresh(): void;
+
+	init(): void;
+
+	run(): void;
+
 }

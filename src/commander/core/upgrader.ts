@@ -39,7 +39,7 @@ export class UpgradingCommander extends Commander {
     }
 
     private handleUpgrader(upgrader: Unit){
-        if(upgrader.store.energy > 0){
+        if(upgrader.carry.energy > 0){
             if(this.upgradeSite.link && this.upgradeSite.link.hits < this.upgradeSite.link.hitsMax){
                 upgrader.task = Tasks.repair(this.upgradeSite.link);
                 return;

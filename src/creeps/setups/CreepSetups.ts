@@ -1,6 +1,5 @@
 import Base from '../../Base';
 
-
 export interface BodySetup {
     pattern: BodyPartConstant[];
     sizeLimit: number;

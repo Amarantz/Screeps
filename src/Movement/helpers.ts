@@ -57,3 +57,4 @@ export function getTerrainCosts(creep: Creep): { plainCost: number, swampCost: n
 		swampCost: 5 * Math.ceil(ratio),
 	};
 }
+

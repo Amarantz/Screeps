@@ -25,6 +25,7 @@ export class QueenCommander extends Commander {
     init() {
         const amount = 1;
         const prespawn = this.handOfNod.spawns.length <= 1 ? 100 : DEFAULT_PRESPAWN;
+        this.wishList(amount, this.queenSetup, { prespawn: prespawn })
     }
 
     private supplyActions(queen: Unit){
@@ -37,11 +38,17 @@ export class QueenCommander extends Commander {
     }
 
     private idleActions(queen: Unit){
+        if(this.handOfNod.link) {
 
+        } else {
+            if(this.handOfNod.battery && queen.carry.energy < queen.carryCapacity) {
+                queen.task = Tasks.withdraw(this.handOfNod.battery);
+            }
+        }
     }
 
     private handleQueen(queen: Unit) {
-        if(queen.store.energy > 0){
+        if(queen.carry.energy > 0){
             this.supplyActions(queen);
         } else {
             this.rechargeActions(queen);
@@ -53,14 +60,13 @@ export class QueenCommander extends Commander {
     }
 
     private rechargeActions(queen: Unit): void {
-        // if(this.handOfNod && !this.handOfNod.link.isEmpty){
-
-        // }
-        if(this.handOfNod.batteries.length > 0&& _.sum(this.handOfNod.batteries, b => b.energy) > 0){
-            queen.task = Tasks.withdraw(_.first(_.filter(this.handOfNod.batteries, b => b.energy > 0)));
-        } else {
-            queen.task = Tasks.recharge();
-        }
+        if (this.handOfNod.link && !this.handOfNod.link.isEmpty) {
+			queen.task = Tasks.withdraw(this.handOfNod.link);
+		} else if (this.handOfNod.battery && this.handOfNod.battery.energy > 0) {
+			queen.task = Tasks.withdraw(this.handOfNod.battery);
+		} else {
+			queen.task = Tasks.recharge();
+		}
     }
 
     run(){

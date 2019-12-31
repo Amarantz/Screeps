@@ -219,7 +219,23 @@ export default class Mem {
 	}
 
     static format() {
-        this.formatDefauts();
+		this.formatDefauts();
+		this.formatCobalMemory();
+		this.formatPathingMemory();
+		_.defaults(Memory.settings, {
+			signature    : "<<OBEY>>",
+			log          : {},
+			enableVisuals: true,
+		});
+		if (!Memory.stats) {
+			Memory.stats = {};
+		}
+		if (!Memory.stats.persistent) {
+			Memory.stats.persistent = {};
+		}
+		if (!Memory.constructionSites) {
+			Memory.constructionSites = {};
+		}
     }
 
     private static formatDefauts() {
@@ -259,12 +275,24 @@ export default class Mem {
 		return Mem._setDeep(object, keys, value);
 	}
 
-	private static formatOvermindMemory() {
-		if (!Memory.Overmind) {
-			Memory.Overmind = {};
+	private static formatCobalMemory() {
+		if (!Memory.Cobal) {
+			Memory.Cobal = {};
 		}
-		if (!Memory.colonies) {
-			Memory.colonies = {};
+		if (!Memory.bases) {
+			Memory.bases = {};
 		}
+	}
+
+
+	private static formatPathingMemory() {
+		if (!Memory.pathing) {
+			Memory.pathing = {} as PathingMemory; // Hacky workaround
+		}
+		_.defaults(Memory.pathing, {
+			paths            : {},
+			distances        : {},
+			weightedDistances: {},
+		});
 	}
 }

@@ -10,6 +10,7 @@ import { log } from "console/log";
 import { maxBy, minBy } from "utils/utils";
 import { Pathing } from "movement/Pathing";
 import $ from "caching/GlobalCache";
+import { BaseStage } from "Base";
 
 export const StandardMinerSetupCost = bodyCost(Setups.drones.miners.standard.generateBody(Infinity));
 export const DoubleMinerSetupCost = bodyCost(Setups.drones.miners.double.generateBody(Infinity));
@@ -37,6 +38,7 @@ export default class MiningCommander extends Commander {
         minLinkDistance: 10,
         dropMineUntilRCL: 3,
     }
+    distance: number;
     constructor(directive: DirectiveHavest, priority: number){
         super(directive, 'mine', priority)
         this.directive = directive;
@@ -100,9 +102,10 @@ export default class MiningCommander extends Commander {
     }
 
     private handleMiner(miner: Unit) {
-        // if(miner.flee(miner.room.fleeDefaults, {dropEnergey: true })){
-        //     return;
-        // }
+        //@ts-ignore
+        if(miner.flee(miner.room.fleeDefaults, { dropEnergey: true })){
+            return;
+        }
 
         if(this.mode == 'early' || !this.harvestPos){
             if(!miner.pos.inRangeToPos(this.pos, 1)){
@@ -169,7 +172,7 @@ export default class MiningCommander extends Commander {
         if(this.goToMiningSite(miner)) return;
         if(this.container) {
             if(this.container.hits < this.container.hitsMax
-            && miner.store.energy >= Math.min(miner.store.getCapacity(), REPAIR_POWER * miner.getActiveBodyparts(WORK))){
+            && miner.carry.energy >= Math.min(miner.carryCapacity, REPAIR_POWER * miner.getActiveBodyparts(WORK))){
                     return miner.repair(this.container);
             } else {
                     return miner.harvest(this.source!);
@@ -177,7 +180,7 @@ export default class MiningCommander extends Commander {
         }
 
         if(this.constructionSite){
-            if(miner.store.getUsedCapacity(RESOURCE_ENERGY) >= Math.min(miner.store.getCapacity(), BUILD_POWER * miner.getActiveBodyparts(WORK))){
+            if(miner.carry.energy >= Math.min(miner.carryCapacity, BUILD_POWER * miner.getActiveBodyparts(WORK))){
                 return miner.build(this.constructionSite);
             } else {
                 return miner.harvest(this.source!);
@@ -186,13 +189,13 @@ export default class MiningCommander extends Commander {
 
         if(this.allowDropMining) {
             miner.harvest(this.source!)
-            if(miner.store.energy > .8 * miner.store.getCapacity()){
+            if(miner.carry.energy > .8 * miner.carryCapacity){
                 const drop = maxBy(miner.pos.findInRange(miner.room.droppedEnergy, 1), drop => drop.amount);
                 if(drop) {
                     miner.goTo(drop);
                 }
             }
-            if (miner.store.getUsedCapacity() == 0){
+            if (miner.carry.energy == miner.carryCapacity){
                 miner.drop(RESOURCE_ENERGY);
             }
             return;
@@ -218,7 +221,23 @@ export default class MiningCommander extends Commander {
     }
 
     private registerEnergyRequest(){
-
+        if (this.container) {
+			const transportCapacity = 200 * this.base.level;
+			const threshold = this.base.stage > BaseStage.MCV ? 0.8 : 0.5;
+			if (_.sum(this.container.store) > threshold * transportCapacity) {
+				this.base.logisticsNetwork.requestOutput(this.container, {
+					resourceType: 'all',
+					dAmountdt   : this.energyPerTick
+				});
+			}
+		}
+		if (this.link) {
+			// If the link will be full with next deposit from the miner
+			const minerCapacity = 150;
+			if (this.link.energy + minerCapacity > this.link.energyCapacity) {
+				this.base.linkNetwork.requestTransmit(this.link);
+			}
+		}
     }
 
     private populateStructures() {
@@ -259,10 +278,10 @@ export default class MiningCommander extends Commander {
         }
 
         if(this.container) {
-            if(this.container.hits < this.container.hitsMax && miner.store.getUsedCapacity(RESOURCE_ENERGY) >= Math.min(miner.store.getCapacity(), REPAIR_POWER * miner.getActiveBodyparts(WORK))){
+            if(this.container.hits < this.container.hitsMax && miner.carry.energy >= Math.min(miner.carryCapacity, REPAIR_POWER * miner.getActiveBodyparts(WORK))){
                 return miner.goRepair(this.container);
             } else {
-                if(_.sum(miner.store) < miner.store.getCapacity()) {
+                if(_.sum(miner.carry) < miner.carryCapacity) {
                     return miner.goHarvest(this.source!);
                 } else {
                     return miner.goTransfer(this.container);

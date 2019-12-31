@@ -6,8 +6,11 @@ import Unit from "unit/Unit";
 import Directive from "directives/Directive";
 import { timingSafeEqual } from "crypto";
 import { DirectiveWrapper } from "directives/initializer";
+import { log } from "./console/log";
+import { TraderJoe } from "logistics/TradeNetwork";
+import { TerminalNetwork } from "logistics/TerminalNetwork";
 
-export const NEW_COBAL_INTERVAL = onPublicServer() ? 20 : 10;
+export const NEW_COBAL_INTERVAL = onPublicServer() ? 20 : 5;
 
 export default class Cobal implements ICobal{
     shouldBuild: boolean;    expiration: number;
@@ -21,6 +24,8 @@ export default class Cobal implements ICobal{
     cache: ICache;
     memory: ICobalMemory;
     expections: Error[];
+    tradeNetwork: TraderJoe;
+    terminalNetwork: TerminalNetwork;
 
     constructor(){
         this.shouldBuild = false;
@@ -34,13 +39,15 @@ export default class Cobal implements ICobal{
         this.spawnGroups = {};
         this.baseMap = {};
         this.expections = [];
+        this.tradeNetwork = new TraderJoe();
     }
 
     build(): void {
-        this.cache.build();
-        this.registerBases();
-        this.wrapCreeps();
-        this.registerDirectives();
+            this.cache.build();
+            this.registerBases();
+            this.wrapCreeps();
+            this.registerDirectives();
+            // this.registerTermainals();
     }
 
     private registerBases(){
@@ -74,23 +81,46 @@ export default class Cobal implements ICobal{
         }
     }
 
-    init(): void {
-        this.general.init();
-        _.forEach(this.bases, base => base.init());
+    private registerTermainals(){
+        let terminals: StructureTerminal[] = [];
+        for(const base in this.bases){
+            terminals.push(this.bases[base].terminal);
+        }
 
+        this.terminalNetwork = new TerminalNetwork(terminals);
+    }
+
+    init(): void {
+            this.general.init();
+            _.forEach(this.bases, base => {
+                base.init()
+            });
     }
     run(): void {
-        this.general.run();
-        _.forEach(this.bases, base => base.run());
+            this.general.run();
+            _.forEach(this.bases, base => base.run());
 
     }
     refresh(): void {
         this.cache.refresh();
         this.general.refresh();
+        for(const name in this.units){
+            this.units[name].refresh();
+        }
+        for(const base in this.baseMap){
+            this.bases[base].refresh()
+        }
     }
 
     postRun(): void {
+        this.general.visuals();
+        this.general.notifier.visuals();
+        for(const e of this.expections){
+            log.error(e);
+        }
+        for(const base in this.baseMap){
+            this.bases[base].visuals()
+        }
     }
-
 
 }

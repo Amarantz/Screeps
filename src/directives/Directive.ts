@@ -350,5 +350,8 @@ export default abstract class Directive {
 	/* Runtime logic goes here, called in overseer.run() */
 	abstract run(): void;
 
+	visuals(): void {
+
+	}
 
 }

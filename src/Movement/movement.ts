@@ -1,11 +1,13 @@
 import {log} from '../console/log';
-import {Roles} from '../creeps/setups/setups';
 import {isUnit} from '../declarations/typeGuards';
 import {rightArrow} from '../utils/stringConstants';
 import {getPosFromString} from '../utils/utils';
 import Unit, {normalizeUnit} from '../unit/Unit';
 import {getTerrainCosts, isExit, normalizePos, sameCoord} from './helpers';
 import {Pathing} from './Pathing';
+import { Roles } from '../creeps/setups/setups';
+import { insideBunkerBounds } from '../roomPlanner/layouts.ts/bunker';
+import { Visualizer } from '../Visualizer';
 
 export const NO_ACTION = -20;
 export const CROSSING_PORTAL = -21;
@@ -567,9 +569,9 @@ export class Movement {
 			for (const otherPos of availablePositions) {
 				const otherCreep = otherPos.lookFor(LOOK_CREEPS)[0];
 				if (!otherCreep) continue;
-				const otherUnit = Cobal.units[otherCreep.name];
-				if (!otherUnit) continue;
-				movePos = this.recursivePush(otherUnit, excludePos.concat(creepPos));
+				const otherZerg = Cobal.units[otherCreep.name];
+				if (!otherZerg) continue;
+				movePos = this.recursivePush(otherZerg, excludePos.concat(creepPos));
 				if (movePos) {
 					this.goTo(creep, movePos, {range: 0, force: true});
 					creep.blockMovement = true;
@@ -586,7 +588,16 @@ export class Movement {
 		options.range = 23;
 		return this.goTo(creep, new RoomPosition(25, 25, roomName), options);
 	}
-    /**
+
+	// /**
+	//  * Travel to a room
+	//  */
+	// static goToRoom_swarm(swarm: Swarm, roomName: string, options: SwarmMoveOptions = {}): number {
+	// 	options.range = 24 - Math.max(swarm.width, swarm.height);
+	// 	return this.swarmMove(swarm, new RoomPosition(25, 25, roomName), options);
+	// }
+
+	/**
 	 * Park a creep off-roads
 	 */
 	static park(creep: Unit, pos: RoomPosition = creep.pos, maintainDistance = false): number {
@@ -594,9 +605,9 @@ export class Movement {
 		if (!road) return OK;
 
 		// Move out of the bunker if you're in it
-		// if (!maintainDistance && creep.base && creep.base.bunker && insideBunkerBounds(creep.pos, creep.base)) {
-		// 	return this.goTo(creep, creep.base.controller.pos);
-		// }
+		if (!maintainDistance && creep.base && creep.base.bunker && insideBunkerBounds(creep.pos, creep.base)) {
+			return this.goTo(creep, creep.base.controller.pos);
+		}
 
 		let positions = _.sortBy(creep.pos.availableNeighbors(), p => p.getRangeTo(pos));
 		if (maintainDistance) {
@@ -726,9 +737,9 @@ export class Movement {
 		return outcome;
 	}
 
-	// /**
-	//  * Moves a swarm to a destination, accounting for group pathfinding
-	//  */
+	/**
+	 * Moves a swarm to a destination, accounting for group pathfinding
+	 */
 	// static swarmMove(swarm: Swarm, destination: HasPos | RoomPosition, options: SwarmMoveOptions = {}): number {
 
 	// 	if (swarm.fatigue > 0) {
@@ -997,9 +1008,9 @@ export class Movement {
 				Pathing.blockHostileCreeps(matrix, creep.room);
 				if (options.requireRamparts) { Pathing.blockNonRamparts(matrix, creep.room); }
 				Movement.combatMoveCallbackModifier(creep.room, matrix, approach, avoid, options);
-				// if (options.displayCostMatrix) {
-				// 	Visualizer.displayCostMatrix(matrix, roomName);
-				// }
+				if (options.displayCostMatrix) {
+					Visualizer.displayCostMatrix(matrix, roomName);
+				}
 				return matrix;
 			} else {
 				return !(Memory.rooms[roomName] && Memory.rooms[roomName][_RM.AVOID]);
@@ -1282,3 +1293,8 @@ export class Movement {
 		});
 	}
 }
+
+// Creep.prototype.goTo = function (destination: RoomPosition | HasPos, options?: MoveOptions) {
+// 	return Movement.goTo(this, destination, options);
+// };
+
