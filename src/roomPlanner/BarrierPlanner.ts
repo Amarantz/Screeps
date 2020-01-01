@@ -1,7 +1,7 @@
 import { BUNKER_RADIUS, bunkerLayout, insideBunkerBounds } from 'roomPlanner/layouts.ts/bunker';
 import { getAllStructureCoordsFromLayout, RoomPlanner, translatePositions } from 'roomPlanner/roomPlanner';
 import { getCutTiles } from '../algorithms/minCut';
-import Base from '../Base';
+import { Base } from '../Base';
 import { log } from '../console/log';
 import Mem from '../memory/memory';
 import { derefCoords, minMax } from '../utils/utils';

@@ -1,7 +1,7 @@
-import Base from 'Base';
-import $ from '../caching/GlobalCache';
+import { Base } from 'Base';
+import {$} from '../caching/GlobalCache';
 import { repairTaskName } from '../tasks/instances/repair';
-import Unit from '../unit/Unit';
+import { Unit } from '../unit/Unit';
 
 const ROAD_CACHE_TIMEOUT = 15;
 

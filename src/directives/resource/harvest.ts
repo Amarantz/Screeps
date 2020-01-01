@@ -1,9 +1,10 @@
-import Directive from "directives/Directive";
+
 import { getCacheExpiration, exponentialMovingAverage } from "utils/utils";
 import { Cartographer, ROOMTYPE_SOURCEKEEPER } from "utils/Cartographer";
 import { CommanderPriority } from "priorities/priorities_commanders";
 import { Pathing } from "movement/Pathing";
 import MiningCommander from "commander/mining/miner";
+import { Directive } from "../Directive";
 
 export const _HAVEST_MEM_PATH = 'P';
 export const _HAVEST_MEM_USAGE = 'u';

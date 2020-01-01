@@ -1,6 +1,6 @@
-import Commander from 'commander/Commander';
-import Unit from 'unit/unit';
-import $ from '../../caching/GlobalCache';
+import { Commander } from '../../commander/Commander';
+import { Unit } from '../../unit/unit';
+import { $ } from '../../caching/GlobalCache';
 import { Roles, Setups } from '../../creeps/setups/setups';
 import { StoreStructure } from '../../declarations/typeGuards';
 import { TERMINAL_STATE_REBUILD } from '../../directives/terminalState/TerminalRebuil';

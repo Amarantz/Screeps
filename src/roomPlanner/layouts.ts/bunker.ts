@@ -1,4 +1,4 @@
-import Base from '../../Base';
+import { Base } from '../../Base';
 import {coordName} from '../../utils/utils';
 import {getAllStructureCoordsFromLayout, StructureLayout} from '../RoomPlanner';
 

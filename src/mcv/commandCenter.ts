@@ -1,14 +1,14 @@
 import CommandCenterCommander from 'commander/core/manager';
 import { TerminalNetwork } from 'logistics/TerminalNetwork';
 import { TransportRequestGroup } from 'logistics/TransportRequestGroup';
-import Base from '../Base';
-import $ from '../caching/GlobalCache';
+import { Base } from '../Base';
+import {$} from '../caching/GlobalCache';
 import Mem from '../memory/memory';
 import { Priority } from '../priorities/priorities';
 import Commando from '../resources/commando';
 import { Cartographer } from '../utils/Cartographer';
 import { Visualizer } from '../Visualizer';
-import MCV from './mcv';
+import { MCV } from './mcv';
 
 export const MAX_OBSERVE_DISTANCE = 7;
 

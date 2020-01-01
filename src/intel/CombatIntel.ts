@@ -1,11 +1,11 @@
-import Base from '../Base';
+import {Base} from '../Base';
 import {log} from '../console/log';
 import {isOwnedStructure, isStructure, isUnit} from '../declarations/typeGuards';
-import Directive from '../directives/Directive';
+import { Directive } from '../directives/Directive';
 import Mem from '../memory/Memory';
 import {Pathing} from '../movement/Pathing';
 import {boostResources} from '../resources/map_resources';
-import Unit, {toCreep} from '../unit/Unit';
+import {Unit, toCreep} from '../unit/Unit';
 import {Cartographer} from '../utils/Cartographer';
 import {RoomIntel} from './RoomIntel';
 

@@ -2,7 +2,7 @@ import {log} from '../console/log';
 import {isUnit} from '../declarations/typeGuards';
 import {rightArrow} from '../utils/stringConstants';
 import {getPosFromString} from '../utils/utils';
-import Unit, {normalizeUnit} from '../unit/Unit';
+import { Unit, normalizeUnit } from '../unit/Unit';
 import {getTerrainCosts, isExit, normalizePos, sameCoord} from './helpers';
 import {Pathing} from './Pathing';
 import { Roles } from '../creeps/setups/setups';

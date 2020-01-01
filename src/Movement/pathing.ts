@@ -1,8 +1,8 @@
-import $ from '../caching/GlobalCache';
+import { $ } from '../caching/GlobalCache';
 import {log} from '../console/log';
 import {hasPos} from '../declarations/typeGuards';
 import {Cartographer, ROOMTYPE_ALLEY, ROOMTYPE_SOURCEKEEPER} from '../utils/Cartographer';
-import Zerg from '../unit/Unit';
+import { Unit } from '../unit/Unit';
 import {normalizePos} from './helpers';
 import {MoveOptions, SwarmMoveOptions} from './Movement';
 import { Visualizer } from '../Visualizer';
@@ -559,9 +559,9 @@ export class Pathing {
 	/**
 	 * Sets all creep positions to impassible
 	 */
-	static blockMyCreeps(matrix: CostMatrix, room: Room, creeps?: (Creep | Zerg)[]) {
+	static blockMyCreeps(matrix: CostMatrix, room: Room, creeps?: (Creep | Unit)[]) {
 
-		const blockCreeps = creeps || room.creeps as (Creep | Zerg)[];
+		const blockCreeps = creeps || room.creeps as (Creep | Unit)[];
 		const blockPositions = _.map(blockCreeps,
 									 creep => Cobal.units[creep.name] ? Cobal.units[creep.name].nextPos
 																		: creep.pos);
@@ -815,7 +815,7 @@ export class Pathing {
 		return serializedPath;
 	}
 
-	static nextDirectionInPath(creep: Zerg): number | undefined {
+	static nextDirectionInPath(creep: Unit): number | undefined {
 		const moveData = creep.memory._go as MoveData;
 		if (!moveData || !moveData.path || moveData.path.length == 0) {
 			return;
@@ -823,7 +823,7 @@ export class Pathing {
 		return Number.parseInt(moveData.path[0], 10);
 	}
 
-	static nextPositionInPath(creep: Zerg): RoomPosition | undefined {
+	static nextPositionInPath(creep: Unit): RoomPosition | undefined {
 		const nextDir = this.nextDirectionInPath(creep);
 		if (!nextDir) {
 			return;

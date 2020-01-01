@@ -2,7 +2,7 @@ import Mem from 'memory/memory';
 import { BarrierPlanner } from 'roomPlanner/BarrierPlanner';
 import { bunkerLayout } from 'roomPlanner/layouts.ts/bunker';
 import { RoadPlanner } from 'roomPlanner/RoadPlanner';
-import Base, { getAllBases } from '../Base';
+import { Base, getAllBases } from '../Base';
 import { log } from '../console/log';
 import { isOwnedStructure } from '../declarations/typeGuards';
 import { DirectiveTerminalRebuildState } from '../directives/terminalState/TerminalRebuil';

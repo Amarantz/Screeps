@@ -1,8 +1,8 @@
-import Commander from 'commander/Commander';
+import { Commander } from 'commander/Commander';
 import { Roles, Setups } from '../../creeps/setups/setups';
-import Directive from '../../directives/Directive';
+import { Directive } from '../../directives/Directive';
 import { CommanderPriority } from '../../priorities/priorities_commanders';
-import Unit from '../../unit/Unit';
+import { Unit } from '../../unit/Unit';
 
 export class StationaryScoutCommander extends Commander {
 

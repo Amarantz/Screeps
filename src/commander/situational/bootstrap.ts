@@ -1,7 +1,7 @@
-import Unit from "unit/Unit";
+import { Unit } from "unit/Unit";
 import { CommanderPriority } from "priorities/priorities_commanders";
 import { Roles, Setups } from "creeps/setups/setups";
-import Commander from "../Commander";
+import { Commander } from "../Commander";
 import DirectiveBootstrap from "../../directives/situational/bootstrap";
 import { SpawnRequest } from "../../mcv/handOfNod";
 import DirectiveHarvest from "../../directives/resource/harvest";

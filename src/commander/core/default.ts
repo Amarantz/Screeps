@@ -1,7 +1,7 @@
-import Commander, { getCommander } from "../Commander";
-import { CommanderPriority } from "priorities/priorities_commanders";
-import Base from "Base";
-import Unit from "unit/Unit";
+import { Commander, getCommander } from "../Commander";
+import { CommanderPriority } from "../../priorities/priorities_commanders";
+import { Base } from "../../Base";
+import { Unit } from "../../unit/Unit";
 
 export default class DefaultCommander extends Commander {
     idleUnit: Unit[];

@@ -1,9 +1,9 @@
-import Commander, { UnitOptions } from "../Commander";
-import Unit from "unit/Unit";
-import { CommanderPriority } from "priorities/priorities_commanders";
-import Base, { BaseStage, DEFCON } from "Base";
-import { Roles, Setups } from "creeps/setups/setups";
-import $ from "caching/GlobalCache";
+import { Commander, UnitOptions } from "../Commander";
+import { Unit } from "../../unit/Unit";
+import { CommanderPriority } from "../../priorities/priorities_commanders";
+import {Base, BaseStage, DEFCON } from "../../Base";
+import { Roles, Setups } from "../../creeps/setups/setups";
+import {$} from "caching/GlobalCache";
 import { Tasks } from "tasks/Tasks";
 import { Cartographer, ROOMTYPE_CONTROLLER } from "../../utils/Cartographer";
 import { Task } from "../../tasks/Task";

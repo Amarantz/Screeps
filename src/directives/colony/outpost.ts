@@ -3,7 +3,7 @@ import { StationaryScoutCommander } from '../../commander/scouting/StationarySco
 import { log } from '../../console/log';
 import { RoomIntel } from '../../intel/RoomIntel';
 import { Cartographer, ROOMTYPE_CONTROLLER } from '../../utils/Cartographer';
-import Directive from '../Directive';
+import { Directive } from '../Directive';
 
 export default class DirectiveOutpost extends Directive {
 

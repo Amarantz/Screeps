@@ -1,6 +1,6 @@
 import { allBunkerCoords, BUNKER_RADIUS, bunkerCoordLookup, bunkerLayout } from 'roomPlanner/layouts.ts/bunker';
 import { distanceTransform } from '../algorithms/distanceTransforms';
-import Base from '../Base';
+import { Base } from '../Base';
 import { Pathing } from '../movement/Pathing';
 import { coordName, minBy } from '../utils/utils';
 

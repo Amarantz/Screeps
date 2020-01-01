@@ -2,7 +2,7 @@ import {bodyCost} from '../creeps/setups/CreepSetups';
 import {isCreep} from '../declarations/typeGuards';
 import {MY_USERNAME} from '../settings';
 import {ExpansionEvaluator} from '../strategy/ExpansionEvaluator';
-import Zerg from '../unit/Unit';
+import { Unit } from '../unit/Unit';
 import {getCacheExpiration, irregularExponentialMovingAverage} from '../utils/utils';
 
 const RECACHE_TIME = 2500;
@@ -227,7 +227,7 @@ export class RoomIntel {
 	/**
 	 * Get the pos a creep was in on the previous tick
 	 */
-	static getPreviousPos(creep: Creep | Zerg): RoomPosition {
+	static getPreviousPos(creep: Creep | Unit): RoomPosition {
 		if (creep.room.memory[_RM.PREV_POSITIONS] && creep.room.memory[_RM.PREV_POSITIONS]![creep.id]) {
 			return derefRoomPosition(creep.room.memory[_RM.PREV_POSITIONS]![creep.id]);
 		} else {

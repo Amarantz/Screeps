@@ -1,8 +1,9 @@
-import Base, { getAllBases } from "Base";
-import { getPosFromString, randomHex, equalXYR } from "utils/utils";
-import { log } from "console/log";
-import { Pathing } from "Movement/pathing";
-import { NotifierPriority } from "./Notifier";
+import { Base, getAllBases} from '../Base';
+import {log} from '../console/log';
+import {Pathing} from '../movement/Pathing';
+import {equalXYR, getPosFromString, randomHex} from '../utils/utils';
+import {NotifierPriority} from './Notifier';
+import { Commander } from '../commander/Commander';
 
 interface DirectiveCreationOptions {
 	memory?: FlagMemory;
@@ -13,66 +14,76 @@ interface DirectiveCreationOptions {
 const DEFAULT_MAX_PATH_LENGTH = 600;
 const DEFAULT_MAX_LINEAR_RANGE = 10;
 
-export default abstract class Directive {
-    static directiveName: string;
-    static color: ColorConstant;
-    static secondaryColor: ColorConstant;
+/**
+ * Directives are contextual wrappers for flags and serve as attachment points for Overlords, acting as a sort of
+ * "process table" for the bot, with individual processes (Overlords) run by the scheulder (Overseer)
+ */
+export abstract class Directive {
 
-    name: string;
-    ref: string;
-    base: Base;
-    baseFilter?:(base:Base) => boolean;
-    pos: RoomPosition;
-    room: Room | undefined;
-    memory: FlagMemory;
-    commanders: {[name:string]: any};
-    waypoints?: RoomPosition[];
+	static directiveName: string;				// Name of the type of directive, e.g. "incubate"
+	static color: ColorConstant; 				// Flag color
+	static secondaryColor: ColorConstant;		// Flag secondaryColor
 
-    constructor(flag: Flag, baseFilter?: (base: Base) => boolean) {
-        this.memory = flag.memory;
-        if(this.memory.suspendUntil){
-            if(Game.time < this.memory.suspendUntil){
-                return;
-            } else {
-                delete this.memory.suspendUntil;
-            }
-        }
+	name: string;								// The name of the flag
+	ref: string;								// Also the name of the flag; used for task targeting
+	base: Base; 							// The colony of the directive (directive is removed if undefined)
+	colonyFilter?: (colony: Base) => boolean; // Requirements to assign to a colony
+	pos: RoomPosition; 							// Flag position
+	room: Room | undefined;						// Flag room
+	memory: FlagMemory;							// Flag memory
+	commanders: { [name: string]: Commander };	// Overlords
+	waypoints?: RoomPosition[];					// List of portals to travel through to reach destination
 
-        this.name = flag.name;
-        this.ref = flag.ref;
-        if(!this.memory[_MEM.TICK]) {
-            this.memory[_MEM.TICK] = Game.time;
-        }
-        if(this.memory.waypoints) {
-            this.waypoints = _.map(this.memory.waypoints, posName => getPosFromString(posName)!);
-        }
-        if(!this.handleRelocation()){
-            this.pos = flag.pos;
-            this.room = flag.room;
-        }
-        const base = this.getBase(baseFilter);
-        if(!base){
-            if(Cobal.expections.length == 0) {
-                log.alert(`Could not get base for directive ${this.print}; removing flag!`);
-                flag.remove();
-            } else {
-                log.alert(`Could not get base for directive ${this.print} exceptions present this tick, so won't remove`);
-            }
-            return;
-        }
-
-        if(this.memory[_MEM.EXPIRATION] && Game.time > this.memory[_MEM.EXPIRATION]!) {
-            log.alert(`removing expired directive ${this.print}!`);
-            flag.remove();
-            return;
-        }
-        this.base = base;
-        this.base.flags = [...this.base.flags, flag];
-        this.commanders = {};
+	constructor(flag: Flag, colonyFilter?: (base: Base) => boolean) {
+		this.memory = flag.memory;
+		if (this.memory.suspendUntil) {
+			if (Game.time < this.memory.suspendUntil) {
+				return;
+			} else {
+				delete this.memory.suspendUntil;
+			}
+		}
+		this.name = flag.name;
+		this.ref = flag.ref;
+		if (!this.memory[_MEM.TICK]) {
+			this.memory[_MEM.TICK] = Game.time;
+		}
+		if (this.memory.waypoints) {
+			this.waypoints = _.map(this.memory.waypoints, posName => getPosFromString(posName)!);
+		}
+		// Relocate flag if needed; this must be called before the colony calculations
+		const needsRelocating = this.handleRelocation();
+		if (!needsRelocating) {
+			this.pos = flag.pos;
+			this.room = flag.room;
+		}
+		const colony = this.getColony(colonyFilter);
+		// Delete the directive if the colony is dead
+		if (!colony) {
+			if (Cobal.expections.length == 0) {
+				log.alert(`Could not get colony for directive ${this.print}; removing flag!`);
+				flag.remove();
+			} else {
+				log.alert(`Could not get colony for directive ${this.print}; ` +
+						  `exceptions present this tick, so won't remove`);
+			}
+			return;
+		}
+		// Delete the directive if expired
+		if (this.memory[_MEM.EXPIRATION] && Game.time > this.memory[_MEM.EXPIRATION]!) {
+			log.alert(`Removing expired directive ${this.print}!`);
+			flag.remove();
+			return;
+		}
+		// Register colony and add flags to colony.flags
+		this.base = colony;
+		this.base.flags.push(flag);
+		this.commanders = {};
+		// Register directive on Overmind
 		global[this.name] = this;
-        Cobal.general.registerDirective(this);
-        Cobal.directives[this.name] = this;
-    }
+		Cobal.general.registerDirective(this);
+		Cobal.directives[this.name] = this;
+	}
 
 	/**
 	 * Gets an effective room position for a directive; allows you to reference this.pos in constructor super() without
@@ -84,14 +95,26 @@ export default abstract class Directive {
 			return pos;
 		}
 		return flag.pos;
-    }
+	}
 
-    // Flag must be a getter to avoid caching issues
+	// Flag must be a getter to avoid caching issues
 	get flag(): Flag {
 		return Game.flags[this.name];
-    }
+	}
 
-    refresh(): void {
+	// get isSuspended(): boolean {
+	// 	return !!this.memory.suspendUntil && Game.time < this.memory.suspendUntil;
+	// }
+	//
+	// suspend(ticks: number) {
+	// 	this.memory.suspendUntil = Game.time + ticks;
+	// }
+	//
+	// suspendUntil(tick: number) {
+	// 	this.memory.suspendUntil = tick;
+	// }
+
+	refresh(): void {
 		const flag = this.flag;
 		if (!flag) {
 			log.warning(`Missing flag for directive ${this.print}! Removing directive.`);
@@ -101,17 +124,17 @@ export default abstract class Directive {
 		this.memory = flag.memory;
 		this.pos = flag.pos;
 		this.room = flag.room;
-    }
+	}
 
-    alert(message: string, priority = NotifierPriority.Normal): void {
+	alert(message: string, priority = NotifierPriority.Normal): void {
 		Cobal.general.notifier.alert(message, this.pos.roomName, priority);
-    }
+	}
 
-    get print(): string {
+	get print(): string {
 		return '<a href="#!/room/' + Game.shard.name + '/' + this.pos.roomName + '">[' + this.name + ']</a>';
-    }
+	}
 
-    private handleRelocation(): boolean {
+	private handleRelocation(): boolean {
 		if (this.memory.setPosition) {
 			const pos = derefRoomPosition(this.memory.setPosition);
 			if (!this.flag.pos.isEqualTo(pos)) {
@@ -129,69 +152,69 @@ export default abstract class Directive {
 			return true;
 		}
 		return false;
-    }
+	}
 
-    private getBase(baseFilter?: (base: Base) => boolean, verbose = false): Base | undefined {
-		// If something is written to flag.base, use that as the base
+	private getColony(colonyFilter?: (base: Base) => boolean, verbose = false): Base | undefined {
+		// If something is written to flag.colony, use that as the colony
 		if (this.memory[_MEM.BASE]) {
 			return Cobal.bases[this.memory[_MEM.BASE]!];
 		} else {
-			// If flag contains a base name as a substring, assign to that base, regardless of RCL
-			const basesNames = _.keys(Cobal.bases);
-			for (const name of basesNames) {
+			// If flag contains a colony name as a substring, assign to that colony, regardless of RCL
+			const colonyNames = _.keys(Cobal.bases);
+			for (const name of colonyNames) {
 				if (this.name.includes(name)) {
 					if (this.name.split(name)[1] != '') continue; // in case of other substring, e.g. E11S12 and E11S1
 					this.memory[_MEM.BASE] = name;
 					return Cobal.bases[name];
 				}
 			}
-			// If flag is in a room belonging to a base and the base has sufficient RCL, assign to there
-			const base = Cobal.bases[Cobal.baseMap[this.pos.roomName]] as Base | undefined;
-			if (base) {
-				if (!baseFilter || baseFilter(base)) {
-					this.memory[_MEM.BASE] = base.name;
-					return base;
+			// If flag is in a room belonging to a colony and the colony has sufficient RCL, assign to there
+			const colony = Cobal.bases[Cobal.baseMap[this.pos.roomName]] as Base | undefined;
+			if (colony) {
+				if (!colonyFilter || colonyFilter(colony)) {
+					this.memory[_MEM.BASE] = colony.name;
+					return colony;
 				}
 			}
-			// Otherwise assign to closest base
-			const nearestbase = this.findNearestbase(baseFilter, verbose);
-			if (nearestbase) {
-				log.info(`base ${nearestbase.room.print} assigned to ${this.name}.`);
-				this.memory[_MEM.BASE] = nearestbase.room.name;
-				return nearestbase;
+			// Otherwise assign to closest colony
+			const nearestColony = this.findNearestColony(colonyFilter, verbose);
+			if (nearestColony) {
+				log.info(`Colony ${nearestColony.room.print} assigned to ${this.name}.`);
+				this.memory[_MEM.BASE] = nearestColony.room.name;
+				return nearestColony;
 			} else {
-				log.error(`Could not find base match for ${this.name} in ${this.pos.roomName}! ` +
+				log.error(`Could not find colony match for ${this.name} in ${this.pos.roomName}! ` +
 						  `Try setting memory.maxPathLength and memory.maxLinearRange.`);
 			}
 		}
-    }
+	}
 
-    private findNearestbase(baseFilter?: (base: Base) => boolean, verbose = false): Base | undefined {
+	private findNearestColony(colonyFilter?: (base: Base) => boolean, verbose = false): Base | undefined {
 		const maxPathLength = this.memory.maxPathLength || DEFAULT_MAX_PATH_LENGTH;
 		const maxLinearRange = this.memory.maxLinearRange || DEFAULT_MAX_LINEAR_RANGE;
-		if (verbose) log.info(`Recalculating base association for ${this.name} in ${this.pos.roomName}`);
-		let nearestbase: Base | undefined;
+		if (verbose) log.info(`Recalculating colony association for ${this.name} in ${this.pos.roomName}`);
+		let nearestColony: Base | undefined;
 		let minDistance = Infinity;
-		const baseRooms = _.filter(Game.rooms, room => room.my);
-		for (const base of getAllBases()) {
-			if (Game.map.getRoomLinearDistance(this.pos.roomName, base.name) > maxLinearRange) {
+		const colonyRooms = _.filter(Game.rooms, room => room.my);
+		for (const colony of getAllBases()) {
+			if (Game.map.getRoomLinearDistance(this.pos.roomName, colony.name) > maxLinearRange) {
 				continue;
 			}
-			if (!baseFilter || baseFilter(base)) {
-				const ret = Pathing.findPath((base).pos, this.pos);
+			if (!colonyFilter || colonyFilter(colony)) {
+				const ret = Pathing.findPath((colony.handOfNod || colony).pos, this.pos);
 				if (!ret.incomplete) {
 					if (ret.path.length < maxPathLength && ret.path.length < minDistance) {
-						nearestbase = base;
+						nearestColony = colony;
 						minDistance = ret.path.length;
 					}
-					if (verbose) log.info(`Path length to ${base.room.print}: ${ret.path.length}`);
+					if (verbose) log.info(`Path length to ${colony.room.print}: ${ret.path.length}`);
 				} else {
-					if (verbose) log.info(`Incomplete path from ${base.room.print}`);
+					if (verbose) log.info(`Incomplete path from ${colony.room.print}`);
 				}
 			}
 		}
-		if (nearestbase) {
-			return nearestbase;
+		if (nearestColony) {
+			return nearestColony;
 		}
 	}
 
@@ -350,8 +373,8 @@ export default abstract class Directive {
 	/* Runtime logic goes here, called in overseer.run() */
 	abstract run(): void;
 
+	// Overwrite this in child classes to display relevant information
 	visuals(): void {
 
 	}
-
 }

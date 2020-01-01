@@ -1,9 +1,10 @@
-import Directive from "../Directive";
-import { Roles } from "creeps/setups/setups";
-import Base from "Base";
+
+import { Roles } from "../../creeps/setups/setups";
+import { Base } from "../../Base";
 import { NotifierPriority } from "../Notifier";
-import { log } from "console/log";
-import BootstrappingCommander from 'commander/situational/bootstrap';
+import { log } from "../../console/log";
+import BootstrappingCommander from '../../commander/situational/bootstrap';
+import { Directive } from "../Directive";
 
 
 export default class DirectiveBootstrap extends Directive {
@@ -35,7 +36,7 @@ export default class DirectiveBootstrap extends Directive {
         this.commanders.bootstrap = new BootstrappingCommander(this);
     }
     init(): void {
-        this.alert(`Colony in bootstrap mode!`, NotifierPriority.High);
+        super.alert(`Colony in bootstrap mode!`, NotifierPriority.High);
 		if (Game.time % 100 == 0) {
 			log.alert(`Colony ${this.room.print} is in emergency recovery mode.`);
 		}

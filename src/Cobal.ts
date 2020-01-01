@@ -1,18 +1,20 @@
 import { onPublicServer } from "utils/utils";
-import cache from './caching/GameCache';
+import { GameCache } from './caching/GameCache';
 import General from './general';
-import Base from "Base";
-import Unit from "unit/Unit";
-import Directive from "directives/Directive";
-import { timingSafeEqual } from "crypto";
+import { Unit } from "unit/Unit";
+import { Directive } from "directives/Directive";
 import { DirectiveWrapper } from "directives/initializer";
 import { log } from "./console/log";
 import { TraderJoe } from "logistics/TradeNetwork";
 import { TerminalNetwork } from "logistics/TerminalNetwork";
+import { RoomIntel } from "intel/RoomIntel";
+import { Visualizer } from "Visualizer";
+import { Base } from "./Base";
+import { basename } from "path";
 
 export const NEW_COBAL_INTERVAL = onPublicServer() ? 20 : 5;
 
-export default class Cobal implements ICobal{
+export class Cobal implements ICobal{
     shouldBuild: boolean;    expiration: number;
     general: IGeneral;
     units: { [creepName: string]: any; };
@@ -30,7 +32,7 @@ export default class Cobal implements ICobal{
     constructor(){
         this.shouldBuild = false;
         this.expiration = Game.time + NEW_COBAL_INTERVAL;
-        this.cache = new cache();
+        this.cache = new GameCache();
         this.general = new General();
         this.units = {};
         this.bases = {};
@@ -56,6 +58,17 @@ export default class Cobal implements ICobal{
             if(Game.rooms[name].my) {
                 baseOutpost[name] = [];
                 this.baseMap[name] = name;
+            }
+        }
+        for(const flag of this.cache.outpostFlags){
+            if(!flag.memory[_MEM.BASE]){
+                continue;
+            }
+            let baseName = flag.memory[_MEM.BASE];
+            if(baseName && baseOutpost[baseName].length){
+                const outpostName = flag.pos.name
+                this.baseMap[outpostName] = baseName;
+                baseOutpost[baseName].push(outpostName)
             }
         }
 
@@ -97,7 +110,7 @@ export default class Cobal implements ICobal{
                 base.init()
             });
     }
-    
+
     run(): void {
             this.general.run();
             _.forEach(this.bases, base => base.run());
@@ -119,6 +132,7 @@ export default class Cobal implements ICobal{
     }
 
     postRun(): void {
+        Visualizer.visuals();
         this.general.visuals();
         this.general.notifier.visuals();
         for(const e of this.expections){
@@ -127,6 +141,7 @@ export default class Cobal implements ICobal{
         for(const base in this.baseMap){
             this.bases[base].visuals()
         }
+        RoomIntel.run();
     }
 
 }

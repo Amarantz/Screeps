@@ -1,6 +1,6 @@
-import Base from "Base";
+import { Base } from "Base";
 import { CreepSetup } from "creeps/setups/CreepSetups";
-import Unit from "unit/Unit";
+import { Unit } from "unit/Unit";
 import { log } from "console/log";
 import { Pathing } from "Movement/Pathing";
 import { SpawnRequest, SpawnRequestOptions } from "mcv/handOfNod";
@@ -44,11 +44,8 @@ export interface CommanderMemory {
 
 const CommmanderMemoryDefaults: CommanderMemory = {}
 
-export default abstract class Commander {
+export abstract class Commander {
     spawnGroup: any;
-    requestBoosts(arg0: any): any {
-        throw new Error("Method not implemented.");
-    }
     protected initializer: CommanderInitializer | Base;
     room: Room | undefined;
     priority: number;
@@ -361,6 +358,16 @@ export default abstract class Commander {
 			creep.ticksToLive! > CREEP_SPAWN_TIME * creep.body.length + spawnDistance! + prespawn ||
 			creep.spawning || (!creep.spawning && !creep.ticksToLive));
     }
+    /**
+	 * Request any needed boosting resources from terminal network
+	 */
+	private requestBoosts(creeps: Unit[]): void {
+		for (const creep of creeps) {
+			if (this.shouldBoost(creep)) {
+				this.requestBoostsForCreep(creep);
+			}
+		}
+	}
 
     visuals(): void {
 

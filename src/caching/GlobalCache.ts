@@ -6,7 +6,7 @@ const SHORT_CACHE_TIMEOUT = 10;
 /**
  * The GlobalCache ($) module saves frequently accessed deserialized objects in temporary, volatile global memory
  */
-export default class $ { // $ = cash = cache... get it? :D
+export class $ { // $ = cash = cache... get it? :D
 
 	static structures<T extends Structure>(saver: { ref: string }, key: string, callback: () => T[],
 										   timeout = CACHE_TIMEOUT): T[] {

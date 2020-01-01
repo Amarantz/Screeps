@@ -1,4 +1,4 @@
-import Base, { BaseStage } from 'Base';
+import { Base,  BaseStage } from 'Base';
 
 /**
  * Energetics manager; makes high-level decisions based on energy amounts

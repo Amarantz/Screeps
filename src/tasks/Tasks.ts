@@ -1,49 +1,26 @@
 import { Task } from "./Task";
-
 import { attackTargetType, TaskAttack } from "./instances/attack";
-
 import { buildTargetType, TaskBuild } from "./instances/build";
-
 import { claimTargetType, TaskClaim } from "./instances/claim";
-
 import { dismantleTargetType, TaskDismantle } from "./instances/dismantle";
-
 import { dropTargetType, TaskDrop } from "./instances/drop";
-
 import { fortifyTargetType, TaskFortify } from "./instances/fortify";
-
 import { getBoostedTargetType, TaskGetBoosted } from "./instances/getBoosted";
-
 import { getRenewedTargetType, TaskGetRenewed } from "./instances/getRenewed";
-
 import { goToRoomTargetType, TaskGoToRoom } from "./instances/goToRoom";
-
 import { harvestTargetType, TaskHarvest } from "./instances/harvest";
-
 import { healTargetType, TaskHeal } from "./instances/heal";
-
 import { meleeAttackTargetType, TaskMeleeAttack } from "./instances/meleeAttack";
-
 import { pickupTargetType, TaskPickup } from "./instances/pickup";
-
 import { rangedAttackTargetType, TaskRangedAttack } from "./instances/rangedAttack";
-
 import { TaskRecharge } from "./instances/recharge";
-
 import { repairTargetType, TaskRepair } from "./instances/repair";
-
 import { reserveTargetType, TaskReserve } from "./instances/reserve";
-
 import { signControllerTargetType, TaskSignController } from "./instances/signController";
-
 import { transferTargetType, TaskTransfer } from "./instances/transfer";
-
 import { transferAllTargetType, TaskTransferAll } from "./instances/transferAll";
-
 import { upgradeTargetType, TaskUpgrade } from "./instances/upgrade";
-
 import { withdrawTargetType, TaskWithdraw } from "./instances/withdraw";
-
 import { withdrawAllTargetType, TaskWithdrawAll } from "./instances/withdrawAll";
 
 export class Tasks {

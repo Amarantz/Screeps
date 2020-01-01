@@ -33,9 +33,9 @@ export function initializeTask(protoTask: ProtoTask): Task {
 	let task: any;
 	// Create a task object of the correct type
 	switch (taskName) {
-		// case attackTaskName:
-		// 	task = new TaskAttack(target as attackTargetType);
-		// 	break;
+		case attackTaskName:
+			task = new TaskAttack(target as attackTargetType);
+			break;
 		case buildTaskName:
 			task = new TaskBuild(target as buildTargetType);
 			break;
@@ -54,10 +54,10 @@ export function initializeTask(protoTask: ProtoTask): Task {
 		case fortifyTaskName:
 			task = new TaskFortify(target as fortifyTargetType);
 			break;
-		// case getBoostedTaskName:
-		// 	task = new TaskGetBoosted(target as getBoostedTargetType,
-		// 							  protoTask.data.resourceType as _ResourceConstantSansEnergy);
-		// 	break;
+		case getBoostedTaskName:
+			task = new TaskGetBoosted(target as getBoostedTargetType,
+									  protoTask.data.resourceType as _ResourceConstantSansEnergy);
+			break;
 		case getRenewedTaskName:
 			task = new TaskGetRenewed(target as getRenewedTargetType);
 			break;
@@ -71,18 +71,18 @@ export function initializeTask(protoTask: ProtoTask): Task {
 		case harvestTaskName:
 			task = new TaskHarvest(target as harvestTargetType);
 			break;
-		// case healTaskName:
-		// 	task = new TaskHeal(target as healTargetType);
-		// 	break;
-		// case meleeAttackTaskName:
-		// 	task = new TaskMeleeAttack(target as meleeAttackTargetType);
-		// 	break;
+		case healTaskName:
+			task = new TaskHeal(target as healTargetType);
+			break;
+		case meleeAttackTaskName:
+			task = new TaskMeleeAttack(target as meleeAttackTargetType);
+			break;
 		case pickupTaskName:
 			task = new TaskPickup(target as pickupTargetType);
 			break;
-		// case rangedAttackTaskName:
-		// 	task = new TaskRangedAttack(target as rangedAttackTargetType);
-		// 	break;
+		case rangedAttackTaskName:
+			task = new TaskRangedAttack(target as rangedAttackTargetType);
+			break;
 		case rechargeTaskName:
 			task = new TaskRecharge(null);
 			break;

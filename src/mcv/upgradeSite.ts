@@ -1,9 +1,9 @@
 import Stats from "../stats/stats";
-import MCV from "./mcv";
-import { UpgradingCommander } from "commander/core/upgrader";
-import Base, { BaseStage } from "../Base";
+import { MCV } from "./mcv";
+import { UpgradingCommander } from "../commander/core/upgrader";
+import { Base, BaseStage } from "../Base";
 import Mem from "memory/memory";
-import $ from "../caching/GlobalCache";
+import { $ } from "../caching/GlobalCache";
 import { hasMinerals } from "../utils/utils";
 import { log } from "../console/log";
 

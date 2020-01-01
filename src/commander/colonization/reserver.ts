@@ -1,11 +1,11 @@
-import Commander from 'commander/Commander';
-import DirectiveOutpost from 'directives/colony/outpost';
+import { Commander } from '../../commander/Commander';
+import DirectiveOutpost from '../../directives/colony/outpost';
 import { Roles, Setups } from '../../creeps/setups/setups';
 import { RoomIntel } from '../../intel/RoomIntel';
 import { CommanderPriority } from '../../priorities/priorities_commanders';
 import { MY_USERNAME } from '../../settings';
 import { Tasks } from '../../tasks/Tasks';
-import Unit from '../../unit/Unit';
+import { Unit } from '../../unit/Unit';
 
 export class ReservingCommander extends Commander {
 

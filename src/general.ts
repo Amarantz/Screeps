@@ -1,16 +1,19 @@
-import Directive from "directives/Directive";
-import { onPublicServer, hasJustSpawned } from "utils/utils";
+import { Directive } from "directives/Directive";
+import { onPublicServer, hasJustSpawned, minBy, derefCoords } from "utils/utils";
 import { Notifier } from "directives/Notifier";
 import Mem from "memory/memory";
-import Commander from "commander/Commander";
+import { Commander } from "commander/Commander";
 import { USE_TRY_CATCH } from "settings";
-import Base, { BaseStage } from "Base";
+import { Base, BaseStage } from "./Base";
 import { Pathing } from "Movement/pathing";
 import { Roles } from "creeps/setups/setups";
 import { bodyCost } from "creeps/setups/CreepSetups";
 import  DirectiveBootstrap  from "directives/situational/bootstrap";
 import { LogisticsNetwork } from "logistics/LogisticsNetwork";
 import { log } from "./console/log";
+import { Cartographer, ROOMTYPE_CONTROLLER } from "utils/Cartographer";
+import { RoomIntel } from "intel/RoomIntel";
+import DirectiveOutpost from "./directives/colony/outpost";
 
 interface GeneralMemory {
     suspsendUntil: {[commanderRef: string]: number;};
@@ -100,7 +103,7 @@ export default class General implements IGeneral {
     }
     init(): void {
         for(const direct of this.directives){
-            direct.init();
+            this.try(() => direct.init());
         }
         if(!this.sorted){
             this.commanders.sort((c1, c2) => c1.priority - c2.priority);
@@ -145,7 +148,7 @@ export default class General implements IGeneral {
 
     run(): void {
         for(const directive of this.directives){
-            directive.run();
+            this.try(() => directive.run());
         }
 
         for(const commander of this.commanders){
@@ -161,6 +164,10 @@ export default class General implements IGeneral {
     }
     placeDirectives(base: Base) {
         this.handleBootstrapping(base);
+
+        if(Game.time % General.settings.outpostCheckFrequency == 2 * base.id){
+            this.handleNewOutposts(base);
+        }
     }
 
     // SafeMode handling
@@ -286,5 +293,53 @@ export default class General implements IGeneral {
 	// 	// for (let colony of this.colonies) {
 	// 	// 	this.drawCreepReport(colony);
 	// 	// }
-	}
+    }
+
+    private computePossibleOutposts(base: Base, depth = 3): string[] {
+        return _.filter(Cartographer.findRoomsInRange(base.room.name, 3), roomName => {
+            if(Cartographer.roomType(roomName) != ROOMTYPE_CONTROLLER){
+                return false;
+            }
+            const alreadyAnOutpost = _.any(Cobal.cache.outpostFlags,
+                flag => (flag.memory.setPosition || flag.pos).roomName == roomName);
+            const alreadyABase = !!Cobal.bases[roomName];
+            if(alreadyABase || alreadyAnOutpost) {
+                return false;
+            }
+            const alreadyOwned = RoomIntel.roomOwnedBy(roomName);
+            const alreadyReserved = RoomIntel.roomReservedBy(roomName);
+            if(alreadyOwned || alreadyReserved){
+                return false;
+            }
+            const neighboringRooms = _.values(Game.map.describeExits(roomName)) as string[];
+            const isReachableFromBase = _.any(neighboringRooms, r => base.roomNames.includes(r));
+            return isReachableFromBase && Game.map.isRoomAvailable(roomName);
+        });
+    }
+
+    private handleNewOutposts(base: Base){
+        const numSources = _.sum(base.roomNames, roomName => (
+            Memory.rooms[roomName] && Memory.rooms[roomName][_RM.SOURCES] && Memory.rooms[roomName][_RM.SOURCES]!.length || 0
+        ));
+        const numRemotes = numSources - base.room.sources.length;
+        if(numRemotes < Base.settings.remoteSourcesByLevel[base.level]){
+            const possibleOutposts = this.computePossibleOutposts(base);
+
+            const origin = base.pos;
+            const bestOutpost = minBy(possibleOutposts, name => {
+                if(!Memory.rooms[name]) return false;
+                const sourceCoords = Memory.rooms[name][_RM.SOURCES] as SavedSource[];
+                if(!sourceCoords) return false;
+                const sourcePositions = _.map(sourceCoords, src => derefCoords(src.c, name));
+                const sourceDistances = _.map(sourcePositions, pos => Pathing.distance(origin, pos));
+                if(_.any(sourceDistances, dist => dist == undefined)) return false;
+                return _.sum(sourceDistances) / sourceDistances.length;
+            });
+            if(bestOutpost){
+                const pos = Pathing.findPathablePosition(bestOutpost);
+                log.info(`Base ${base.room.print} now remoting mining from ${pos.print}`);
+                DirectiveOutpost.createIfNotPresent(pos, 'room', {memory: {[_MEM.BASE]: base.name }});
+            }
+        }
+    }
 }

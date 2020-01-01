@@ -1,6 +1,6 @@
 
-import Base, {getAllBases} from '../base';
-import $ from '../caching/GlobalCache';
+import {Base, getAllBases} from '../base';
+import {$} from '../caching/GlobalCache';
 import {log} from '../console/log';
 import Mem from '../memory/Memory';
 import Abathur from '../resources/commando';

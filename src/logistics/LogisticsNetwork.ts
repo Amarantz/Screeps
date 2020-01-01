@@ -1,5 +1,5 @@
 import {Matcher} from '../algorithms/galeShapley';
-import Base from '../Base';
+import { Base } from '../Base';
 import {log} from '../console/log';
 import {Roles} from '../creeps/setups/setups';
 import {
@@ -12,7 +12,7 @@ import {
 } from '../declarations/typeGuards';
 import Mem from '../memory/Memory';
 import {Pathing} from '../movement/Pathing';
-import Unit from '../unit/Unit';
+import {Unit} from '../unit/Unit';
 import {minMax} from '../utils/utils';
 
 export type LogisticsTarget =

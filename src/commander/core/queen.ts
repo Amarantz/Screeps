@@ -1,10 +1,10 @@
-import Commander, { DEFAULT_PRESPAWN } from "../Commander";
+import { Commander, DEFAULT_PRESPAWN } from "../Commander";
 import HandOfNod from "mcv/handOfNod";
 import { CreepSetup } from "creeps/setups/CreepSetups";
 import { CommanderPriority } from "priorities/priorities_commanders";
 import { Setups, Roles } from "creeps/setups/setups";
 import { Tasks } from "tasks/Tasks";
-import Unit from "unit/Unit";
+import { Unit } from "unit/Unit";
 
 export class QueenCommander extends Commander {
     handOfNod: HandOfNod;

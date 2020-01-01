@@ -1,6 +1,6 @@
 import {initializeTask} from './initializer';
 import { log } from '../console/log';
-import Unit from 'unit/Unit';
+import { Unit } from '../unit/Unit';
 
 type targetType = { ref: string, pos: ProtoPos }; // overwrite this variable to specify more precise typing
 

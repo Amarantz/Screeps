@@ -1,11 +1,11 @@
 import WorkerCommander from 'commander/core/workers';
-import Base from '../Base';
-import $ from '../caching/GlobalCache';
+import { Base } from '../Base';
+import { $ } from '../caching/GlobalCache';
 import { log } from '../console/log';
 import { TERMINAL_STATE_REBUILD } from '../directives/terminalState/TerminalRebuil';
 import { CombatIntel } from '../intel/CombatIntel';
 import { CombatTargeting } from '../targeting/CombatTargeting';
-import MCV from './mcv';
+import { MCV } from './mcv';
 
 export default class Oblisk extends MCV {
 
@@ -159,28 +159,28 @@ export default class Oblisk extends MCV {
 			return;
 		}
 
-		// Towers build nuke response ramparts
-		const nearbyNukeRamparts = _.filter(this.base.commanders.work.nukeDefenseRamparts,
-										  rampart => this.pos.getRangeTo(rampart) <= TOWER_OPTIMAL_RANGE);
-		if (nearbyNukeRamparts.length > 0 && this.base.terminal
-			&& this.base.terminalState != TERMINAL_STATE_REBUILD) {
-			const nukes = this.base.room.find(FIND_NUKES);
-			const timeToImpact = _.min(_.map(nukes, nuke => nuke.timeToLand));
-			if (timeToImpact) {
-				const repairHitsRemaining = _.sum(_.values(this.base.commanders.work.nukeDefenseHitsRemaining));
-				const hitsRepairedPerTick = this.towers.length * TOWER_POWER_REPAIR;
-				// Only repair using towers if it looks like you won't finish repairs in time
-				if (repairHitsRemaining > 0.9 * hitsRepairedPerTick * timeToImpact) {
-					for (const tower of this.towers) {
-						tower.repair(nearbyNukeRamparts[0]);
-					}
-					return;
-				}
-			} else {
-				// Shouldn't get here
-				log.warning(`No time to impact! (Why?)`);
-			}
-		}
+		// // Towers build nuke response ramparts
+		// const nearbyNukeRamparts = _.filter(this.base.commanders.work.nukeDefenseRamparts,
+		// 								  rampart => this.pos.getRangeTo(rampart) <= TOWER_OPTIMAL_RANGE);
+		// if (nearbyNukeRamparts.length > 0 && this.base.terminal
+		// 	&& this.base.terminalState != TERMINAL_STATE_REBUILD) {
+		// 	const nukes = this.base.room.find(FIND_NUKES);
+		// 	const timeToImpact = _.min(_.map(nukes, nuke => nuke.timeToLand));
+		// 	if (timeToImpact) {
+		// 		const repairHitsRemaining = _.sum(_.values(this.base.commanders.work.nukeDefenseHitsRemaining));
+		// 		const hitsRepairedPerTick = this.towers.length * TOWER_POWER_REPAIR;
+		// 		// Only repair using towers if it looks like you won't finish repairs in time
+		// 		if (repairHitsRemaining > 0.9 * hitsRepairedPerTick * timeToImpact) {
+		// 			for (const tower of this.towers) {
+		// 				tower.repair(nearbyNukeRamparts[0]);
+		// 			}
+		// 			return;
+		// 		}
+		// 	} else {
+		// 		// Shouldn't get here
+		// 		log.warning(`No time to impact! (Why?)`);
+		// 	}
+		// }
 
 		// Prevent rampart decay at early RCL
 		this.preventRampartDecay();

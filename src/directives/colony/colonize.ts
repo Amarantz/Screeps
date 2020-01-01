@@ -1,10 +1,10 @@
-import Base from '../../Base';
+import { Base } from '../../Base';
 import { log } from '../../console/log';
 import { Roles } from '../../creeps/setups/setups';
 import { MY_USERNAME } from '../../settings';
 import { Cartographer, ROOMTYPE_CONTROLLER } from '../../utils/Cartographer';
 import { printRoomName } from '../../utils/utils';
-import Directive from '../Directive';
+import { Directive } from '../Directive';
 
 export class DirectiveColonize extends Directive {
 
@@ -15,9 +15,9 @@ export class DirectiveColonize extends Directive {
 	static requiredRCL = 3;
 
 	toColonize: Base | undefined;
-	overlords: {
-		// claim: ClaimingOverlord;
-		// pioneer: PioneerOverlord;
+	commanders: {
+		claim: ClaimingCommander;
+		pioneer: PioneerCommander;
 	};
 
 	constructor(flag: Flag) {
@@ -34,8 +34,8 @@ export class DirectiveColonize extends Directive {
 	}
 
 	spawnMoarCommanders() {
-		// this.overlords.claim = new ClaimingOverlord(this);
-		// this.overlords.pioneer = new PioneerOverlord(this);
+		this.commanders.claim = new ClaimingCommander(this);
+		this.commanders.pioneer = new PioneerCommander(this);
 	}
 
 	init() {

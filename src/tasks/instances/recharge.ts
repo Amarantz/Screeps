@@ -2,7 +2,7 @@ import { TaskPickup, pickupTaskName } from "./pickup";
 import { TaskWithdraw, withdrawTaskName } from "./withdraw";
 import { isResource } from "declarations/typeGuards";
 import { TaskHarvest } from "./harvest";
-import Unit from "unit/Unit";
+import { Unit } from "../../unit/Unit";
 import { maxBy, minMax } from "utils/utils";
 import { log } from "../../console/log";
 import { Task } from "../Task";

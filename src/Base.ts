@@ -1,28 +1,29 @@
-import Mem from "memory/memory";
-import $ from './caching/GlobalCache';
-import Unit from "unit/Unit";
+import Mem from "./memory/memory";
+import {$} from './caching/GlobalCache';
+import { Unit } from "./unit/Unit";
 import DirectiveHavest, { _HAVEST_MEM_DOWNTIME, _HAVEST_MEM_USAGE } from "directives/resource/harvest";
-import HandOfNod from "mcv/handOfNod";
+import HandOfNod from "./mcv/handOfNod";
 import Stats from "./stats/stats";
-import { StoreStructure } from "declarations/typeGuards";
-import { mergeSum, maxBy, minBy } from "utils/utils";
-import { log } from "console/log";
-import MCV from "mcv/mcv";
-import UpgradeSite from "mcv/upgradeSite";
-import { TransportRequestGroup } from "logistics/TransportRequestGroup";
-import DefaultCommander from "commander/core/default";
-import WorkerCommander from "commander/core/workers";
-import { LogisticsNetwork } from "logistics/LogisticsNetwork";
-import TransportCommander  from "commander/core/transport";
-import { Energetics } from "logistics/Energetics";
-import { LinkNetwork } from "logistics/LinkNetwork";
-import { RoadLogistics } from "logistics/RoadLogistics";
+import { StoreStructure } from "./declarations/typeGuards";
+import { mergeSum, maxBy, minBy } from "./utils/utils";
+import { log } from "./console/log";
+import { MCV } from "./mcv/mcv";
+import UpgradeSite from "./mcv/upgradeSite";
+import { TransportRequestGroup } from "./logistics/TransportRequestGroup";
+import DefaultCommander from "./commander/core/default";
+import WorkerCommander from "./commander/core/workers";
+import { LogisticsNetwork } from "./logistics/LogisticsNetwork";
+import TransportCommander  from "./commander/core/transport";
+import { Energetics } from "./logistics/Energetics";
+import { LinkNetwork } from "./logistics/LinkNetwork";
+import { RoadLogistics } from "./logistics/RoadLogistics";
 import EvolutionChamber from "./mcv/evolutionChamber";
 import { RoomPlanner } from "./roomPlanner/roomPlanner";
 import { bunkerLayout, getPosFromBunkerCoord } from "./roomPlanner/layouts.ts/bunker";
 import Commando from "./resources/commando";
 import { Visualizer } from "./Visualizer";
-import Oblisk from "mcv/oblisk";
+import Oblisk from "./mcv/oblisk";
+import RandomWalkingScoutCommander from "./commander/scouting/randomWalking";
 
 export enum BaseStage {
 	MCV = 0,		// No storage and no incubator
@@ -71,7 +72,7 @@ export interface BunkerData {
 	rightSpawn: StructureSpawn | undefined;
 }
 
-export default class Base {
+export class Base {
     availableLinks: StructureLink[];
     id: number;
     name: string;
@@ -118,6 +119,7 @@ export default class Base {
         default: DefaultCommander;
         work: WorkerCommander;
         logistics: TransportCommander;
+        scout?: RandomWalkingScoutCommander;
     };
     lowPowerMode: boolean;
     logisticsNetwork: LogisticsNetwork;
@@ -394,6 +396,9 @@ export default class Base {
             default: new DefaultCommander(this),
             work: new WorkerCommander(this),
             logistics: new TransportCommander(this),
+        }
+        if(!this.room.observer){
+            this.commanders.scout = new RandomWalkingScoutCommander(this)
         }
         for(const mcv of this.MCVbuildings){
             mcv.spawnMoreCommanders();

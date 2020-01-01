@@ -1,4 +1,4 @@
-import Unit from '../unit/Unit';
+import { Unit } from '../unit/Unit';
 
 export interface EnergyStructure extends Structure {
 	energy: number;

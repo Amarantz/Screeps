@@ -1,9 +1,8 @@
-import Commander from "../Commander";
+import { Commander } from "../Commander";
 import UpgradeSite from "mcv/upgradeSite";
 import { Roles, Setups } from "creeps/setups/setups";
 import { CommanderPriority } from "priorities/priorities_commanders";
-import Unit from "unit/Unit";
-import { setFlagsFromString } from "v8";
+import { Unit } from "unit/Unit";
 import { Tasks } from "tasks/Tasks";
 
 export class UpgradingCommander extends Commander {

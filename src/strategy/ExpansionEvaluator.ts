@@ -1,4 +1,4 @@
-import Base from '../Base';
+import { Base } from '../Base';
 import {log} from '../console/log';
 import {Pathing} from '../movement/Pathing';
 import { BasePlanner } from '../roomPlanner/basePlanner';

@@ -1,7 +1,7 @@
-import Base from "Base";
-import Commander from "commander/Commander";
+import { Base } from "../Base";
+import { Commander } from "../commander/Commander";
 
-export default abstract class MCV {
+export abstract class MCV {
     base: Base;
     room: Room;
     pos: RoomPosition;

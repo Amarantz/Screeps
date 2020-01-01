@@ -1,13 +1,13 @@
 import { CommanderPriority } from 'priorities/priorities_commanders';
-import Base from '../../Base';
+import { Base } from '../../Base';
 import {log} from '../../console/log';
 import {Roles, Setups} from '../../creeps/setups/setups';
 import {isResource, isStoreStructure, isTombstone} from '../../declarations/typeGuards';
 import {ALL_RESOURCE_TYPE_ERROR, BufferTarget, LogisticsRequest} from '../../logistics/LogisticsNetwork';
 import {Pathing} from '../../movement/Pathing';
 import {Tasks} from '../../tasks/Tasks';
-import Unit from '../../unit/Unit';
-import Commander from '../commander';
+import { Unit } from '../../unit/Unit';
+import { Commander } from '../../commander/Commander';
 
 /**
  * The transport overlord handles energy transport throughout a colony

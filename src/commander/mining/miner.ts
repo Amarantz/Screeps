@@ -1,16 +1,16 @@
 import { bodyCost, CreepSetup } from "creeps/setups/CreepSetups";
 
-import { Setups, Roles } from "creeps/setups/setups";
-import Commander from "commander/Commander";
-import DirectiveHavest from "directives/resource/harvest";
-import Unit from "unit/Unit";
-import { CommanderPriority } from "priorities/priorities_commanders";
-import { Cartographer, ROOMTYPE_SOURCEKEEPER } from "utils/Cartographer";
-import { log } from "console/log";
-import { maxBy, minBy } from "utils/utils";
-import { Pathing } from "movement/Pathing";
-import $ from "caching/GlobalCache";
-import { BaseStage } from "Base";
+import { Setups, Roles } from "../../creeps/setups/setups";
+import { Commander } from "../../commander/Commander";
+import DirectiveHavest from "../../directives/resource/harvest";
+import { Unit } from "../../unit/Unit";
+import { CommanderPriority } from "../../priorities/priorities_commanders";
+import { Cartographer, ROOMTYPE_SOURCEKEEPER } from "../../utils/Cartographer";
+import { log } from "../../console/log";
+import { maxBy, minBy } from "../../utils/utils";
+import { Pathing } from "../../movement/Pathing";
+import {$} from "../../caching/GlobalCache";
+import { BaseStage } from "../../Base";
 
 export const StandardMinerSetupCost = bodyCost(Setups.drones.miners.standard.generateBody(Infinity));
 export const DoubleMinerSetupCost = bodyCost(Setups.drones.miners.double.generateBody(Infinity));

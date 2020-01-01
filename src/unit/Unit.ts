@@ -1,8 +1,8 @@
 import { Movement, MoveOptions } from "movement/Movement";
-import Base from "Base";
+import { Base } from "../Base";
 import { Task } from "tasks/Task";
 import { initializeTask } from "tasks/initializer";
-import Commander, { setCommander, getCommander } from "commander/Commander";
+import { Commander, setCommander, getCommander } from "commander/Commander";
 import { NEW_COBAL_INTERVAL } from "Cobal";
 import { isUnit, isCreep } from "declarations/typeGuards";
 import { log } from "../console/log";
@@ -47,8 +47,7 @@ const RANGES = {
  * The Unit class is a wrapper for owned creeps and contains all wrapped creep methods and many additional methods for
  * direct control of a creep.
  */
-
-export default class Unit {
+export class Unit {
 
 	creep: Creep; 						// The creep that this wrapper class will control
 	body: BodyPartDefinition[];    	 	// These properties are all wrapped from this.creep.* to this.*

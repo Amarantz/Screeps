@@ -1,4 +1,4 @@
-import Base, { getAllBases } from 'Base';
+import { Base,  getAllBases } from '../Base';
 import { MIN_EXPANSION_DISTANCE } from 'strategy/ExpansionEvaluator';
 import { log } from '../console/log';
 import { DirectiveColonize } from '../directives/colony/colonize';

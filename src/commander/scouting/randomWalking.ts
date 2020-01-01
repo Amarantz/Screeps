@@ -1,9 +1,9 @@
-import Commander from 'commander/Commander';
+import { Commander } from 'commander/Commander';
 import { CommanderPriority } from 'priorities/priorities_commanders';
-import Base from '../../Base';
+import { Base}  from '../../Base';
 import { Roles, Setups } from '../../creeps/setups/setups';
 import { Tasks } from '../../tasks/Tasks';
-import Unit from '../../unit/Unit';
+import { Unit } from '../../unit/Unit';
 
 const DEFAULT_NUM_SCOUTS = 3;
 export default class RandomWalkingScoutCommander extends Commander {

@@ -1,3 +1,4 @@
+import './console/global';
 import './prototypes/Creep';
 import './prototypes/miscellaneous';
 import './prototypes/Room';
@@ -6,27 +7,11 @@ import './prototypes/RoomPosition';
 import './prototypes/RoomStructures';
 import './prototypes/RoomVisiual';
 import './prototypes/Structures';
-import './console/global';
+import './tasks/initializer';
 
-import Havester from "./creeps/roles/havester";
-import Upgrader from "./creeps/roles/upgrader";
-import Worker from "./creeps/roles/worker";
-import Filler from "./creeps/roles/filler";
-import Transporter from "./creeps/roles/transport";
 import Mem from "./memory/memory";
-import Cobal from "./Cobal";
+import { Cobal } from "./Cobal";
 import Stats from './stats/stats';
-
-const maxHavesters = 2;
-const maxUpgraders = 4;
-const maxBuilders = 2;
-const maxTransporters = 2;
-const maxFillers = 2;
-// When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
-// This utility uses source maps to get the line numbers and file names of the original, TS source code
-const main = () => {
-};
-
 export const loop = () => {
     Mem.load();
     if(!Mem.shouldRun()) return;

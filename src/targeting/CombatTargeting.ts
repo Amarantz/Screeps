@@ -2,7 +2,7 @@ import { log } from '../console/log';
 import { CombatIntel } from '../intel/CombatIntel';
 import { Pathing } from '../movement/Pathing';
 import { AttackStructurePriorities, AttackStructureScores } from '../priorities/priorities_structures';
-import Unit from '../unit/Unit';
+import { Unit } from '../unit/Unit';
 import { maxBy } from '../utils/utils';
 
 export class CombatTargeting {

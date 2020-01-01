@@ -1,4 +1,4 @@
-import Base, { getAllBases } from 'Base';
+import { Base, getAllBases } from 'Base';
 import {maxMarketPrices, TraderJoe} from '../logistics/TradeNetwork';
 import Mem from '../memory/Memory';
 import {mergeSum, minMax, onPublicServer} from '../utils/utils';

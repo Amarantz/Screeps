@@ -1,4 +1,6 @@
-export default class GameCache implements ICache {
+import DirectiveOutpost from "../directives/colony/outpost";
+
+export class GameCache implements ICache {
     outpostFlags: Flag[];
     creepsByBase: { [baseName: string]: Creep[]; };
     targets: {[ref: string]: string[]}
@@ -8,7 +10,7 @@ export default class GameCache implements ICache {
         this.commanders = {};
         this.creepsByBase = {};
         this.targets = {};
-        this.outpostFlags = [];
+        this.outpostFlags = _.filter(Game.flags, flag => flag.color == COLOR_PURPLE && flag.secondaryColor == COLOR_PURPLE);
     }
     private cacheCreepsByBase() {
         this.creepsByBase = _.groupBy(Game.creeps, creep => creep.memory[_MEM.BASE]) as {[colName:string]: Creep[]}

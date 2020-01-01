@@ -1,6 +1,6 @@
-import Directive from 'directives/Directive';
 import { NotifierPriority } from 'directives/Notifier';
 import { log } from '../../console/log';
+import { Directive } from '../Directive';
 
 export const TERMINAL_STATE_REBUILD: TerminalState = {
 	name     : 'rebuild',

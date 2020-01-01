@@ -1,6 +1,6 @@
-import Base, { getAllBases } from 'Base';
+import { Base, getAllBases } from 'Base';
 import { RoomPlanner } from 'roomPlanner/roomPlanner';
-import $ from '../caching/GlobalCache';
+import { $ } from '../caching/GlobalCache';
 import { log } from '../console/log';
 import Mem from '../memory/memory';
 import { MatrixTypes, Pathing } from '../movement/Pathing';
