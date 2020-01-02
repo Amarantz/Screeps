@@ -4,6 +4,7 @@ import { Roles, Setups } from "creeps/setups/setups";
 import { CommanderPriority } from "priorities/priorities_commanders";
 import { Unit } from "unit/Unit";
 import { Tasks } from "tasks/Tasks";
+import { boostResources } from "../../resources/map_resources";
 
 export class UpgradingCommander extends Commander {
 
@@ -17,7 +18,7 @@ export class UpgradingCommander extends Commander {
         super(upgradeSite, 'upgrade', priority);
         this.upgradeSite = upgradeSite;
         this.upgraders = this.unit(Roles.upgrader, {
-            // boostWishList: [boostResource.upgrade[3]],
+            boostWishList: [boostResources.upgrade[3]],
         })
     }
 

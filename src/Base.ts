@@ -24,6 +24,7 @@ import Commando from "./resources/commando";
 import { Visualizer } from "./Visualizer";
 import Oblisk from "./mcv/oblisk";
 import RandomWalkingScoutCommander from "./commander/scouting/randomWalking";
+import { CommandCenter } from "./mcv/commandCenter";
 
 export enum BaseStage {
 	MCV = 0,		// No storage and no incubator
@@ -171,7 +172,7 @@ export class Base {
         this.roomNames = [roomName, ...outposts];
         this.room = Game.rooms[roomName];
         this.outposts = _.compact(_.map(outposts, outpost => Game.rooms[outpost]));
-        this.rooms = [this.room, ...this.outposts];
+        this.rooms = [this.room].concat(this.outposts);
         this.miningSites = {};
         this.extractionSites = {};
         this.creeps = global.Cobal.cache.creepsByBase[this.name] || [];
@@ -342,7 +343,6 @@ export class Base {
     private registerMCVComponets() {
         this.MCVbuildings = [];
         if (this.stage > BaseStage.MCV) {
-            //@ts-ignore
 			this.commandCenter = new CommandCenter(this, this.storage!);
 		}
         if(this.spawns[0]){

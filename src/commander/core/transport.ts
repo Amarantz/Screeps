@@ -29,9 +29,8 @@ export default class TransportOverlord extends Commander {
 			return 0;
 		}
 
-		let transportPower = 0;
+		let transportPower:number = 0;
 		const scaling = 2; // this.colony.stage == ColonyStage.Larva ? 1.5 : 2.0; // aggregate round-trip multiplier
-
 		// Add contributions to transport power from hauling energy from mining sites
 		for (const flagName in this.base.miningSites) {
 			const o = this.base.miningSites[flagName].commanders.mine;
@@ -43,7 +42,6 @@ export default class TransportOverlord extends Commander {
 				}
 			}
 		}
-
 		// Add transport power needed to move to upgradeSite
 		if (this.base.upgradeSite.battery) {
 			transportPower += UPGRADE_CONTROLLER_POWER * this.base.upgradeSite.upgradePowerNeeded * scaling *
@@ -55,7 +53,6 @@ export default class TransportOverlord extends Commander {
 			// Reduce needed transporters when colony is in low power mode
 			transportPower *= 0.5;
 		}
-
 		return transportPower / CARRY_CAPACITY;
 	}
 
@@ -67,7 +64,6 @@ export default class TransportOverlord extends Commander {
 		const transportPowerEach = setup.getBodyPotential(CARRY, this.base);
 		const neededTransportPower = this.neededTransportPower();
 		const numTransporters = Math.ceil(neededTransportPower / transportPowerEach);
-
 		if (this.transporters.length == 0) {
 			this.wishList(numTransporters, setup, {priority: CommanderPriority.ownedRoom.firstTransport});
 		} else {

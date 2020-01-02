@@ -38,7 +38,7 @@ export default class MiningCommander extends Commander {
         minLinkDistance: 10,
         dropMineUntilRCL: 3,
     }
-    distance: number;
+
     constructor(directive: DirectiveHavest, priority: number){
         super(directive, 'mine', priority)
         this.directive = directive;
@@ -100,9 +100,12 @@ export default class MiningCommander extends Commander {
         this.wishList(this.minersNeeded, this.setup);
         this.registerEnergyRequest();
     }
+    get distance(): number {
+		return this.directive.distance;
+	}
 
     private handleMiner(miner: Unit) {
-        //@ts-ignore
+    //@ts-ignore
         if(miner.flee(miner.room.fleeDefaults, { dropEnergey: true })){
             return;
         }

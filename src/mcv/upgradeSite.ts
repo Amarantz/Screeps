@@ -6,6 +6,7 @@ import Mem from "memory/memory";
 import { $ } from "../caching/GlobalCache";
 import { hasMinerals } from "../utils/utils";
 import { log } from "../console/log";
+import { Visualizer } from "../Visualizer";
 
 
 interface UpgradeSiteMemory {
@@ -55,9 +56,9 @@ export default class UpgradeSite extends MCV {
 		// Register link
 		$.set(this, 'link', () => this.pos.findClosestByLimitedRange(base.availableLinks, 3));
 		this.base.linkNetwork.claimLink(this.link);
-		// // Energy per tick is sum of upgrader body parts and nearby worker body parts
+		// Energy per tick is sum of upgrader body parts and nearby worker body parts
 		// this.energyPerTick = $.number(this, 'energyPerTick', () =>
-		// 	_.sum(this.overlord.upgraders, upgrader => upgrader.getActiveBodyparts(WORK)) +
+		// 	_.sum(this.commander.upgraders, upgrader => upgrader.getActiveBodyparts(WORK)) +
 		// 	_.sum(_.filter(this.base.getCreepsByRole(WorkerSetup.role), worker =>
 		// 			  worker.pos.inRangeTo((this.link || this.battery || this).pos, 2)),
 		// 		  worker => worker.getActiveBodyparts(WORK)));
@@ -143,8 +144,7 @@ export default class UpgradeSite extends MCV {
 		inputLocations = _.filter(inputLocations,
 								  pos => pos.availableNeighbors(true).length >= maxNeighbors);
         // Return location closest to storage by path
-        //@ts-ignore
-		const inputPos = originPos.findClosestByPath(inputLocations);
+		const inputPos = originPos!.findClosestByPath(inputLocations);
 		if (inputPos) {
 			return inputPos;
 		}
@@ -180,7 +180,7 @@ export default class UpgradeSite extends MCV {
 	run(): void {
 		if (Game.time % 25 == 7 && this.base.level >= 2) {
 			this.buildBatteryIfMissing();
-		}
+        }
 	}
 
 	visuals() {
@@ -190,7 +190,7 @@ export default class UpgradeSite extends MCV {
 		// 	let progressTotal = `${Math.floor(this.controller.progressTotal / 1000)}K`;
 		// 	let percent = `${Math.floor(100 * this.controller.progress / this.controller.progressTotal)}`;
 		// 	info.push(`Progress: ${progress}/${progressTotal} (${percent}%)`);
-		//
+
 		// }
 		// info.push(`Downtime: ${this.memory.stats.downtime.toPercent()}`);
 		// Visualizer.showInfo(info, this);

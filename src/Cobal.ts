@@ -11,6 +11,7 @@ import { RoomIntel } from "intel/RoomIntel";
 import { Visualizer } from "Visualizer";
 import { Base } from "./Base";
 import { basename } from "path";
+import { USE_TRY_CATCH } from "./settings";
 
 export const NEW_COBAL_INTERVAL = onPublicServer() ? 20 : 5;
 
@@ -65,13 +66,12 @@ export class Cobal implements ICobal{
                 continue;
             }
             let baseName = flag.memory[_MEM.BASE];
-            if(baseName && baseOutpost[baseName].length){
-                const outpostName = flag.pos.name
+            if(baseName && baseOutpost[baseName]){
+                const outpostName = flag.pos.roomName
                 this.baseMap[outpostName] = baseName;
                 baseOutpost[baseName].push(outpostName)
             }
         }
-
         let id = 0;
         for(const baseName in baseOutpost){
             this.bases[baseName] = new Base(id, baseName, baseOutpost[baseName]);
@@ -107,8 +107,9 @@ export class Cobal implements ICobal{
     init(): void {
             this.general.init();
             _.forEach(this.bases, base => {
-                base.init()
+                this.try(() => base.init());
             });
+            this.try(() => this.terminalNetwork.init());
     }
 
     run(): void {
@@ -119,29 +120,46 @@ export class Cobal implements ICobal{
 
     refresh(): void {
         this.cache.refresh();
-        this.general.refresh();
+        this.try(() => this.general.refresh());
         for(const name in this.units){
-            this.units[name].refresh();
+            this.try(() => this.units[name].refresh());
         }
         for(const base in this.baseMap){
-            this.bases[base].refresh();
+            this.try(() => this.bases[base].refresh());
         }
         for(const commander in this.commanders){
-            this.commanders[commander].refresh();
+            this.try(()=>this.commanders[commander].refresh());
         }
     }
 
     postRun(): void {
-        Visualizer.visuals();
-        this.general.visuals();
-        this.general.notifier.visuals();
         for(const e of this.expections){
-            log.error(e);
-        }
-        for(const base in this.baseMap){
-            this.bases[base].visuals()
+            log.debug(e);
         }
         RoomIntel.run();
+    }
+
+
+    private try(callback: ()=> any, identifier?:string): void {
+        if((USE_TRY_CATCH)){
+            try{
+                callback();
+            } catch(e){
+                if(identifier){
+                    e.name = `Caught unhandle exception at ${'' + callback} (identifier: ${identifier}): \n ${e.name} \n ${e.stack}`;
+                } else {
+                    e.name = `Caught unhandle exception at ${'' + callback}: \n ${e.name} \n ${e.stack}`;
+                }
+                this.expections.push(e)
+            }
+        } else {
+            callback();
+        }
+    }
+    visuals() {
+        Visualizer.visuals();
+        this.general.notifier.visuals();
+        _.forEach(this.bases, base => base.visuals());
     }
 
 }

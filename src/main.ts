@@ -19,7 +19,8 @@ export const loop = () => {
     // main();
 
     cobal_loop();
-    Stats.run()
+	Stats.run()
+	global.Cobal.visuals();
     global.Cobal.postRun();
 }
 
