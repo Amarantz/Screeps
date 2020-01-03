@@ -3,7 +3,7 @@ import { Base } from "../Base";
 import { Task } from "tasks/Task";
 import { initializeTask } from "tasks/initializer";
 import { Commander, setCommander, getCommander } from "commander/Commander";
-import { NEW_COBAL_INTERVAL } from "Cobal";
+import { NEW_COBAL_INTERVAL } from "../Cobal";
 import { isUnit, isCreep } from "declarations/typeGuards";
 import { log } from "../console/log";
 import { CombatIntel } from "../intel/CombatIntel";
