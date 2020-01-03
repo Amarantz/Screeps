@@ -1,4 +1,5 @@
 import { Unit } from '../unit/Unit';
+import { CombatUnit } from 'unit/CombatUnit';
 
 export interface EnergyStructure extends Structure {
 	energy: number;
@@ -52,4 +53,8 @@ export function isPowerCreep(obj: RoomObject): obj is PowerCreep {
 
 export function isUnit(creep: Creep | Unit): creep is Unit {
 	return (<Unit>creep).creep != undefined;
+}
+
+export function isCombatUnit(unit: Creep | Unit | CombatUnit): unit is CombatUnit {
+	return (<CombatUnit>unit).isCombatZerg != undefined;
 }

@@ -1,19 +1,23 @@
 import { Directive } from "directives/Directive";
 import { onPublicServer, hasJustSpawned, minBy, derefCoords } from "utils/utils";
 import { Notifier } from "directives/Notifier";
-import Mem from "memory/memory";
+import Mem from "./memory/memory";
 import { Commander } from "commander/Commander";
 import { USE_TRY_CATCH } from "settings";
-import { Base, BaseStage } from "./Base";
+import { Base, BaseStage } from './Base';
 import { Pathing } from "Movement/pathing";
 import { Roles } from "creeps/setups/setups";
 import { bodyCost } from "creeps/setups/CreepSetups";
 import  DirectiveBootstrap  from "directives/situational/bootstrap";
 import { LogisticsNetwork } from "logistics/LogisticsNetwork";
 import { log } from "./console/log";
-import { Cartographer, ROOMTYPE_CONTROLLER } from "utils/Cartographer";
+import { Cartographer, ROOMTYPE_CONTROLLER, ROOMTYPE_SOURCEKEEPER } from "utils/Cartographer";
 import { RoomIntel } from "intel/RoomIntel";
-import DirectiveOutpost from "./directives/colony/outpost";
+import { DirectiveOutpostDefense } from "directives/defense/outpostDefense";
+import { DirectiveGuard } from "directives/defense/guard";
+import { DirectiveInvasionDefense } from "directives/defense/invasionDefense";
+import DirectiveOutpost from "directives/colony/outpost";
+import { CombatPlanner } from "strategy/combatPlanner";
 
 interface GeneralMemory {
     suspsendUntil: {[commanderRef: string]: number;};
@@ -30,6 +34,7 @@ export default class General implements IGeneral {
     private commanderByBase: {[col: string]: Commander[]};
     private directives: Directive[];
     notifier: INotifier;
+    combatPlanner: CombatPlanner;
 
     static settings = {
         outpostCheckFrequency: onPublicServer() ? 250 : 100,
@@ -42,6 +47,7 @@ export default class General implements IGeneral {
         this.commanderByBase = {};
         this.sorted = false;
         this.notifier = new Notifier();
+        this.combatPlanner = new CombatPlanner();
     }
     refresh(): void {
         this.memory = Mem.wrap(Memory, 'general', defaultGeneralMemory);
@@ -164,6 +170,8 @@ export default class General implements IGeneral {
     }
     placeDirectives(base: Base) {
         this.handleBootstrapping(base);
+        this.handleOutpostDefense(base);
+        this.handleColonyInvasions(base);
 
         if(Game.time % General.settings.outpostCheckFrequency == 2 * base.id){
             this.handleNewOutposts(base);
@@ -290,8 +298,8 @@ export default class General implements IGeneral {
 			overlord.visuals();
 		}
 	// 	this.notifier.visuals();
-	// 	// for (let colony of this.colonies) {
-	// 	// 	this.drawCreepReport(colony);
+	// 	// for (let base of this.colonies) {
+	// 	// 	this.drawCreepReport(base);
 	// 	// }
     }
 
@@ -342,4 +350,43 @@ export default class General implements IGeneral {
             }
         }
     }
+
+    private handleOutpostDefense(base: Base) {
+		// Guard directive: defend your outposts and all rooms of colonies that you are incubating
+		for (const room of base.outposts) {
+			// Handle player defense
+			if (room.dangerousPlayerHostiles.length > 0) {
+				DirectiveOutpostDefense.createIfNotPresent(Pathing.findPathablePosition(room.name), 'room');
+				return;
+			}
+			// Handle NPC invasion directives
+			if (Cartographer.roomType(room.name) != ROOMTYPE_SOURCEKEEPER) { // SK rooms can fend for themselves
+				const defenseFlags = _.filter(room.flags, flag => DirectiveGuard.filter(flag) ||
+																  DirectiveOutpostDefense.filter(flag));
+				if (room.dangerousHostiles.length > 0 && defenseFlags.length == 0) {
+					DirectiveGuard.create(room.dangerousHostiles[0].pos);
+				}
+			}
+		}
+	}
+
+	private handleColonyInvasions(base: Base) {
+		// Defend against invasions in owned rooms
+		if (base.room) {
+
+			// See if invasion is big enough to warrant creep defenses
+			const effectiveInvaderCount = _.sum(_.map(base.room.hostiles,
+													invader => invader.boosts.length > 0 ? 2 : 1));
+			const needsDefending = effectiveInvaderCount >= 3 || base.room.dangerousPlayerHostiles.length > 0;
+
+			if (needsDefending) {
+				// Place defensive directive after hostiles have been present for a long enough time
+				const safetyData = RoomIntel.getSafetyData(base.room.name);
+				const invasionIsPersistent = safetyData.unsafeFor > 20;
+				if (invasionIsPersistent) {
+					DirectiveInvasionDefense.createIfNotPresent(base.controller.pos, 'room');
+				}
+			}
+		}
+	}
 }

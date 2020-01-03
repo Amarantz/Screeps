@@ -1,4 +1,4 @@
-import { Base } from "Base";
+import { Base } from "../Base";
 import { CreepSetup } from "creeps/setups/CreepSetups";
 import { Unit } from "unit/Unit";
 import { log } from "console/log";
@@ -7,6 +7,7 @@ import { SpawnRequest, SpawnRequestOptions } from "mcv/handOfNod";
 import { boostParts } from "resources/map_resources";
 import { Tasks } from "tasks/Tasks";
 import { MIN_LIFETIME_FOR_BOOST } from "tasks/instances/getBoosted";
+import { CombatUnit } from "unit/CombatUnit";
 
 export interface CommanderInitializer {
     ref: string;
@@ -55,7 +56,8 @@ export abstract class Commander {
 
     private _creeps: {[roleName:string]: Creep[]};
     private _units: {[roleName:string]: Unit[]};
-    private boosts: { [roleName: string]: _ResourceConstantSansEnergy[] | undefined };
+	private boosts: { [roleName: string]: _ResourceConstantSansEnergy[] | undefined };
+	private _combatUnit: { [roleName: string]: CombatUnit[] };
     pos: RoomPosition;
     creepUsageReport: { [roleName: string]: [number, number] | undefined };
 
@@ -68,7 +70,8 @@ export abstract class Commander {
         this.pos = initializer.pos;
         this.base = hasBase(initializer) ? initializer.base : initializer;
         this._units = {};
-        this._creeps = {};
+		this._creeps = {};
+		this._combatUnit = {};
         this.recalculateCreeps();
         this.creepUsageReport = _.mapValues(this._creeps, creep => undefined);
         Cobal.commanders[this.ref] = this;
@@ -106,7 +109,10 @@ export abstract class Commander {
        this._creeps = _.mapValues(Cobal.cache.commanders[this.ref], creepsOfRole => _.map(creepsOfRole, creepName => Game.creeps[creepName.name]));
        for(const role in this._units){
             this.synchronizeUnits(role);
-       }
+	   }
+	   for(const role in this._combatUnit){
+		   this.synchronizeCombatUnit(role);
+	   }
     }
 
     protected unit(role:string, opts: UnitOptions = {}): Unit[] {
@@ -130,7 +136,45 @@ export abstract class Commander {
                 _.remove(this._units[role], u => u.name == unit.name);
             }
         }
-    }
+	}
+	
+		/**
+	 * Wraps all creeps of a given role to CombatZerg objects and updates the contents in future ticks
+	 */
+	protected combatUnit(role: string, opts: UnitOptions = {}): CombatUnit[] {
+		if (!this._combatUnit[role]) {
+			this._combatUnit[role] = [];
+			this.synchronizeCombatUnit(role, opts.notifyWhenAttacked);
+		}
+		if (opts.boostWishList) {
+			this.boosts[role] = opts.boostWishList;
+		}
+		return this._combatUnit[role];
+	}
+
+	synchronizeCombatUnit(role: string, notifyWhenAttacked?: boolean) {
+				// Synchronize the corresponding sets of CombatZerg
+		const zergNames = _.zipObject(_.map(this._combatUnit[role] || [],
+											zerg => [zerg.name, true])) as { [name: string]: boolean };
+		const creepNames = _.zipObject(_.map(this._creeps[role] || [],
+											 creep => [creep.name, true])) as { [name: string]: boolean };
+		// Add new creeps which aren't in the _combatZerg record
+		for (const creep of this._creeps[role] || []) {
+			if (!zergNames[creep.name]) {
+				if (Cobal.units[creep.name] && (<CombatUnit>Cobal.units[creep.name]).isCombatZerg) {
+					this._combatUnit[role].push(Cobal.units[creep.name]);
+				} else {
+					this._combatUnit[role].push(new CombatUnit(creep, notifyWhenAttacked));
+				}
+			}
+		}
+		// Remove dead/reassigned creeps from the _combatZerg record
+		for (const zerg of this._combatUnit[role]) {
+			if (!creepNames[zerg.name]) {
+				_.remove(this._combatUnit[role], z => z.name == zerg.name);
+			}
+		}
+	}
 
     get outpostIndex(): number {
         return _.findIndex(this.base.roomNames, roomName => roomName == this.pos.roomName);

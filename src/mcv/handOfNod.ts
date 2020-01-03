@@ -2,8 +2,8 @@ import { CreepSetup, bodyCost } from "creeps/setups/CreepSetups";
 import { $}  from '../caching/GlobalCache';
 import { Commander } from "commander/Commander";
 import { MCV } from "./mcv";
-import {Base, BaseStage } from "Base";
-import Mem from "memory/memory";
+import {Base, BaseStage } from "../Base";
+import Mem from "../memory/memory";
 import { EnergyStructure } from "declarations/typeGuards";
 import { Unit } from "unit/Unit";
 import { log } from "console/log";
@@ -15,6 +15,7 @@ import { QueenCommander } from "commander/core/queen";
 import { TransportRequestGroup } from "logistics/TransportRequestGroup";
 import { Priority } from "priorities/priorities";
 import { Visualizer } from "../Visualizer";
+import { BunkerQueenOverlord } from "commander/core/queen_bunker";
 
 const ERR_ROOM_ENERGY_CAPACITY_NOT_ENOUGH = -20;
 const ERR_SPECIFIED_SPAWN_BUSY = -21;
@@ -64,7 +65,7 @@ export default class HandOfNod extends MCV {
     link: StructureLink | undefined;
     energyStructures: EnergyStructure[];
 
-    commander: QueenCommander;
+    commander: QueenCommander | BunkerQueenOverlord;
     settings: {
         refillTowersBelow: number,
         suppressSpawning: boolean;
@@ -299,7 +300,11 @@ export default class HandOfNod extends MCV {
     }
 
     spawnMoreCommanders(): void {
-        this.commander = new QueenCommander(this);
+        if((this.base.storage || this.base.terminal) && this.base.assets[RESOURCE_ENERGY] > 10000){
+            this.commander = new BunkerQueenOverlord(this);
+        } else {
+            this.commander = new QueenCommander(this);
+        }
     }
     init(): void {
         this.registerEnergyRequests();

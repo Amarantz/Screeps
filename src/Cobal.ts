@@ -10,7 +10,6 @@ import { TerminalNetwork } from "logistics/TerminalNetwork";
 import { RoomIntel } from "intel/RoomIntel";
 import { Visualizer } from "Visualizer";
 import { Base } from "./Base";
-import { basename } from "path";
 import { USE_TRY_CATCH } from "./settings";
 
 export const NEW_COBAL_INTERVAL = onPublicServer() ? 20 : 5;
