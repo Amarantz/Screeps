@@ -121,6 +121,8 @@ export default class MiningCommander extends Commander {
                 return this.earlyMiningActions(miner);
             case 'standard':
                 return this.standardMiningAction(miner);
+            case 'link':
+                return this.linkMiningActions(miner);
             case 'double':
                 return this.standardMiningAction(miner);
             default:
@@ -203,10 +205,26 @@ export default class MiningCommander extends Commander {
             }
             return;
         }
-
-
-
     }
+    	/**
+	 * Actions for handling link mining
+	 */
+	private linkMiningActions(miner: Unit) {
+
+		// Approach mining site
+		if (this.goToMiningSite(miner)) return;
+
+		// Link mining
+		if (this.link) {
+			miner.harvest(this.source!);
+			if (miner.carry.energy > 0.9 * miner.carryCapacity) {
+				miner.transfer(this.link, RESOURCE_ENERGY);
+			}
+			return;
+		} else {
+			log.warning(`Link miner ${miner.print} has no link!`);
+		}
+	}
 
     private goToMiningSite(miner: Unit): boolean {
         if(this.harvestPos){

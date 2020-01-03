@@ -15,6 +15,7 @@ import { QueenCommander } from "commander/core/queen";
 import { TransportRequestGroup } from "logistics/TransportRequestGroup";
 import { Priority } from "priorities/priorities";
 import { Visualizer } from "../Visualizer";
+import { insideBunkerBounds, energyStructureOrder, getPosFromBunkerCoord } from "../roomPlanner/layouts.ts/bunker";
 
 const ERR_ROOM_ENERGY_CAPACITY_NOT_ENOUGH = -20;
 const ERR_SPECIFIED_SPAWN_BUSY = -21;
@@ -84,7 +85,7 @@ export default class HandOfNod extends MCV {
         this.spawns = base.spawns;
         this.avaliableSpawns = _.filter(this.spawns, spawn => !spawn.spawning);
         this.extensions = base.extensions;
-        this.battery = this.pos.findClosestByLimitedRange(this.room.containers, 2);
+        this.battery = _.first(_.filter(this.room.containers, cont => insideBunkerBounds(cont.pos, this.base)));
         $.set(this, 'energyStructures', () => this.computeEnergyStructures());
         this.productionPriorities = [];
         this.productionQueue = {};
@@ -114,14 +115,24 @@ export default class HandOfNod extends MCV {
     }
 
     private computeEnergyStructures(): (StructureSpawn| StructureExtension)[] {
-        let spawnsAndExtentions: (StructureSpawn | StructureExtension)[] = [];
-        spawnsAndExtentions = spawnsAndExtentions.concat(this.spawns, this.extensions);
-        return _.sortBy(spawnsAndExtentions, s => s.pos.getRangeTo(this.idlePos));
+        const positions = _.map(energyStructureOrder, coord => getPosFromBunkerCoord(coord, this.base));
+        let spawnsAndExtensions: (StructureSpawn | StructureExtension)[] = [];
+        spawnsAndExtensions = spawnsAndExtensions.concat(this.spawns, this.extensions);
+        const energyStructures: (StructureSpawn | StructureExtension)[] = [];
+        for (const pos of positions) {
+            const structure = _.find(pos.lookFor(LOOK_STRUCTURES), s =>
+                s.structureType == STRUCTURE_SPAWN
+                || s.structureType == STRUCTURE_EXTENSION) as StructureSpawn | StructureExtension;
+            if (structure) {
+                energyStructures.push(_.remove(spawnsAndExtensions, s => s.id == structure.id)[0]);
+            }
+        }
+        return _.compact(energyStructures.concat(spawnsAndExtensions));
     }
 
     private registerEnergyRequests(): void {
         if(this.link && this.link.isEmpty){
-
+            this.base.linkNetwork.requestReceive(this.link);
         }
 
         if(this.battery) {
